@@ -3,13 +3,12 @@ requires = ["setuptools>=71.0","coloredlogs"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rmc_dft"
-version = "0.4.20"
+name = "glyph_motion"
+version = "0.0.0"
 
-description = "rmc_dft is a Python package for performing Reverse Monte Carlo modeling and ab initio molecular dynamics / relaxation using VASP code."
+description = "Generate robot handwriting motions from text strings."
 authors = [
     { name="Kengo NAKADA", email="kengo.nakada@email.com" },
-    { name="Kentaro Kobayashi", email="kobayashi@mat.shimane-u.ac.jp"}
 ]
 readme = "README.md"
 # requires-python = ">=3.8"
