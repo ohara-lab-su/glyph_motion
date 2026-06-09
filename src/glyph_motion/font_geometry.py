@@ -1,371 +1,230 @@
 """
-フォントファイルから指定文字列の輪郭座標を取り出す。
+フォント文字を中心線へ変換する処理で共有する幾何データ型を定義する。
 
-このモジュールは、フォントのアウトライン命令を FontOutlineGlyph へ変換する。
-中心線化、塗りつぶし、表示、移動命令生成は行わない。
+このモジュールは、処理段階の入出力データだけを保持する。
+フォントの読み込み、輪郭抽出、塗りつぶし、中心線抽出、表示、移動命令生成は
+それぞれ別モジュールで行う。
 """
 
-from pathlib import Path
-from typing import Any
+from dataclasses import dataclass
+from typing import Iterator
 from typing import List
-from typing import Optional
 from typing import Tuple
 
-from fontTools.pens.recordingPen import RecordingPen
-from fontTools.ttLib import TTFont
-
-from font_geometry import FontOutlineGlyph
-from font_geometry import FontOutlinePath
-from font_geometry import FontPoint
+import numpy as np
 
 
-class FontOutlineExtractor:
-    """フォントファイルから指定文字列の輪郭座標を生成する。"""
+@dataclass
+class FontPoint:
+    """XY平面上の一点を表す。"""
 
-    def __init__(
+    x: float
+    y: float
+
+    def as_tuple(self) -> Tuple[float, float]:
+        """座標をタプルとして返す。"""
+        return self.x, self.y
+
+    def scaled(self, scale: float) -> "FontPoint":
+        """原点基準で拡大縮小した点を返す。"""
+        return FontPoint(
+            x=self.x * scale,
+            y=self.y * scale,
+        )
+
+    def shifted(
         self,
-        font_file: Path,
-        height: float,
-        curve_division: int,
-    ) -> None:
-        """フォントファイルと輪郭点列化条件を設定する。"""
-        if height <= 0.0:
-            raise ValueError("height は正の値である必要がある。")
+        x_offset: float,
+        y_offset: float,
+    ) -> "FontPoint":
+        """指定量だけ平行移動した点を返す。"""
+        return FontPoint(
+            x=self.x + x_offset,
+            y=self.y + y_offset,
+        )
 
-        if curve_division < 1:
-            raise ValueError("curve_division は1以上である必要がある。")
 
-        self._font_file = font_file
-        self._height = height
-        self._curve_division = curve_division
+@dataclass
+class FontOutlinePath:
+    """フォントから取り出した一本の輪郭線を表す。"""
 
-        self._font = TTFont(str(self._font_file))
-        self._cmap = self._font.getBestCmap()
-        self._glyph_set = self._font.getGlyphSet()
+    points: List[FontPoint]
+    closed: bool
 
-        units_per_em = float(self._font["head"].unitsPerEm)
-        self._scale = self._height / units_per_em
+    def __iter__(self) -> Iterator[FontPoint]:
+        """輪郭上の点を順に返す。"""
+        return iter(self.points)
 
-    def extract_text(
+    def __len__(self) -> int:
+        """輪郭点数を返す。"""
+        return len(self.points)
+
+    def scaled(self, scale: float) -> "FontOutlinePath":
+        """輪郭全体を拡大縮小した輪郭を返す。"""
+        points: List[FontPoint] = []
+
+        for point in self.points:
+            points.append(point.scaled(scale=scale))
+
+        return FontOutlinePath(
+            points=points,
+            closed=self.closed,
+        )
+
+    def shifted(
         self,
-        text: str,
-        spacing: float,
-    ) -> FontOutlineGlyph:
-        """文字列全体の輪郭座標を取得する。"""
-        paths: List[FontOutlinePath] = []
-        x_offset = 0.0
+        x_offset: float,
+        y_offset: float,
+    ) -> "FontOutlinePath":
+        """輪郭全体を平行移動した輪郭を返す。"""
+        points: List[FontPoint] = []
 
-        for character in text:
-            outline = self.extract_character(character=character)
-            shifted_outline = outline.shifted(
-                x_offset=x_offset,
-                y_offset=0.0,
+        for point in self.points:
+            points.append(
+                point.shifted(
+                    x_offset=x_offset,
+                    y_offset=y_offset,
+                )
             )
 
-            for path in shifted_outline:
-                paths.append(path)
+        return FontOutlinePath(
+            points=points,
+            closed=self.closed,
+        )
 
-            glyph_name = self._get_glyph_name(character=character)
-            advance_width = self._font["hmtx"].metrics[glyph_name][0]
-            x_offset = x_offset + float(advance_width) * self._scale
-            x_offset = x_offset + spacing
+
+@dataclass
+class FontOutlineGlyph:
+    """指定文字列から取り出した輪郭線群を表す。"""
+
+    text: str
+    paths: List[FontOutlinePath]
+
+    def __iter__(self) -> Iterator[FontOutlinePath]:
+        """輪郭線を順に返す。"""
+        return iter(self.paths)
+
+    def __len__(self) -> int:
+        """輪郭線数を返す。"""
+        return len(self.paths)
+
+    def scaled(self, scale: float) -> "FontOutlineGlyph":
+        """輪郭線群全体を拡大縮小した文字輪郭を返す。"""
+        paths: List[FontOutlinePath] = []
+
+        for path in self.paths:
+            paths.append(path.scaled(scale=scale))
 
         return FontOutlineGlyph(
-            text=text,
+            text=self.text,
             paths=paths,
         )
 
-    def extract_character(
+    def shifted(
         self,
-        character: str,
-    ) -> FontOutlineGlyph:
-        """一文字の輪郭座標を取得する。"""
-        if len(character) != 1:
-            raise ValueError("character は1文字である必要がある。")
-
-        glyph_name = self._get_glyph_name(character=character)
-        glyph = self._glyph_set[glyph_name]
-
-        pen = RecordingPen()
-        glyph.draw(pen)
-
-        outline = self._recording_to_outline(
-            text=character,
-            recording=pen.value,
-        )
-
-        return outline.scaled(scale=self._scale)
-
-    def _get_glyph_name(
-        self,
-        character: str,
-    ) -> str:
-        """文字に対応するフォント内部グリフ名を返す。"""
-        code_point = ord(character)
-
-        if code_point not in self._cmap:
-            raise ValueError("フォントに含まれていない文字である。")
-
-        return self._cmap[code_point]
-
-    def _recording_to_outline(
-        self,
-        text: str,
-        recording: List[Tuple[str, Tuple[Any, ...]]],
-    ) -> FontOutlineGlyph:
-        """RecordingPenの命令列を輪郭点列へ変換する。"""
+        x_offset: float,
+        y_offset: float,
+    ) -> "FontOutlineGlyph":
+        """輪郭線群全体を平行移動した文字輪郭を返す。"""
         paths: List[FontOutlinePath] = []
 
-        current_points: List[FontPoint] = []
-        current_point: Optional[FontPoint] = None
-        start_point: Optional[FontPoint] = None
-
-        for command_name, command_args in recording:
-            if command_name == "moveTo":
-                if len(current_points) > 0:
-                    paths.append(
-                        FontOutlinePath(
-                            points=current_points,
-                            closed=False,
-                        )
-                    )
-
-                raw_point = command_args[0]
-                current_point = FontPoint(
-                    x=float(raw_point[0]),
-                    y=float(raw_point[1]),
-                )
-                start_point = current_point
-                current_points = [current_point]
-
-            elif command_name == "lineTo":
-                raw_point = command_args[0]
-                current_point = FontPoint(
-                    x=float(raw_point[0]),
-                    y=float(raw_point[1]),
-                )
-                current_points.append(current_point)
-
-            elif command_name == "qCurveTo":
-                if current_point is not None:
-                    curve_points = self._qcurve_to_points(
-                        current_point=current_point,
-                        command_args=command_args,
-                    )
-
-                    for point in curve_points:
-                        current_points.append(point)
-
-                    if len(curve_points) > 0:
-                        current_point = curve_points[-1]
-
-            elif command_name == "curveTo":
-                if current_point is not None:
-                    curve_points = self._curve_to_points(
-                        current_point=current_point,
-                        command_args=command_args,
-                    )
-
-                    for point in curve_points:
-                        current_points.append(point)
-
-                    if len(curve_points) > 0:
-                        current_point = curve_points[-1]
-
-            elif command_name == "closePath":
-                if start_point is not None:
-                    current_points.append(start_point)
-
-                if len(current_points) > 0:
-                    paths.append(
-                        FontOutlinePath(
-                            points=current_points,
-                            closed=True,
-                        )
-                    )
-
-                current_points = []
-                current_point = None
-                start_point = None
-
-        if len(current_points) > 0:
+        for path in self.paths:
             paths.append(
-                FontOutlinePath(
-                    points=current_points,
-                    closed=False,
+                path.shifted(
+                    x_offset=x_offset,
+                    y_offset=y_offset,
                 )
             )
 
         return FontOutlineGlyph(
-            text=text,
+            text=self.text,
             paths=paths,
         )
 
-    def _qcurve_to_points(
+
+@dataclass
+class FontFilledGlyph:
+    """輪郭を格子上に塗りつぶした文字領域を表す。"""
+
+    text: str
+    mask: np.ndarray
+    x_min: float
+    y_min: float
+    pixel_size: float
+
+    def index_to_point(
         self,
-        current_point: FontPoint,
-        command_args: Tuple[Any, ...],
-    ) -> List[FontPoint]:
-        """TrueTypeの2次ベジェ命令を点列へ変換する。"""
-        q_points = list(command_args)
+        row_index: int,
+        column_index: int,
+    ) -> FontPoint:
+        """配列インデックスをXY座標へ変換する。"""
+        x = self.x_min + float(column_index) * self.pixel_size
+        y = self.y_min + float(row_index) * self.pixel_size
 
-        if len(q_points) == 0:
-            return []
-
-        if q_points[-1] is None:
-            q_points = q_points[:-1]
-
-        if len(q_points) == 0:
-            return []
-
-        if len(q_points) == 1:
-            end_point = FontPoint(
-                x=float(q_points[0][0]),
-                y=float(q_points[0][1]),
-            )
-            return self._quadratic_bezier(
-                p0=current_point,
-                p1=current_point,
-                p2=end_point,
-            )
-
-        points: List[FontPoint] = []
-        p0 = current_point
-
-        for index in range(0, len(q_points) - 1):
-            raw_control = q_points[index]
-            raw_next = q_points[index + 1]
-
-            control_point = FontPoint(
-                x=float(raw_control[0]),
-                y=float(raw_control[1]),
-            )
-
-            if index == len(q_points) - 2:
-                end_point = FontPoint(
-                    x=float(raw_next[0]),
-                    y=float(raw_next[1]),
-                )
-            else:
-                end_point = FontPoint(
-                    x=0.5 * (float(raw_control[0]) + float(raw_next[0])),
-                    y=0.5 * (float(raw_control[1]) + float(raw_next[1])),
-                )
-
-            segment_points = self._quadratic_bezier(
-                p0=p0,
-                p1=control_point,
-                p2=end_point,
-            )
-
-            for point in segment_points:
-                points.append(point)
-
-            p0 = end_point
-
-        return points
-
-    def _curve_to_points(
-        self,
-        current_point: FontPoint,
-        command_args: Tuple[Any, ...],
-    ) -> List[FontPoint]:
-        """3次ベジェ命令を点列へ変換する。"""
-        point_1 = FontPoint(
-            x=float(command_args[0][0]),
-            y=float(command_args[0][1]),
-        )
-        point_2 = FontPoint(
-            x=float(command_args[1][0]),
-            y=float(command_args[1][1]),
-        )
-        point_3 = FontPoint(
-            x=float(command_args[2][0]),
-            y=float(command_args[2][1]),
+        return FontPoint(
+            x=x,
+            y=y,
         )
 
-        return self._cubic_bezier(
-            p0=current_point,
-            p1=point_1,
-            p2=point_2,
-            p3=point_3,
-        )
 
-    def _quadratic_bezier(
-        self,
-        p0: FontPoint,
-        p1: FontPoint,
-        p2: FontPoint,
-    ) -> List[FontPoint]:
-        """2次ベジェ曲線を点列化する。"""
-        points: List[FontPoint] = []
+@dataclass
+class FontCenterlinePath:
+    """中心線一本を表す。"""
 
-        for index in range(1, self._curve_division + 1):
-            t = float(index) / float(self._curve_division)
-            one_minus_t = 1.0 - t
+    points: List[FontPoint]
 
-            x = one_minus_t * one_minus_t * p0.x
-            x = x + 2.0 * one_minus_t * t * p1.x
-            x = x + t * t * p2.x
+    def __iter__(self) -> Iterator[FontPoint]:
+        """中心線上の点を順に返す。"""
+        return iter(self.points)
 
-            y = one_minus_t * one_minus_t * p0.y
-            y = y + 2.0 * one_minus_t * t * p1.y
-            y = y + t * t * p2.y
+    def __len__(self) -> int:
+        """中心線上の点数を返す。"""
+        return len(self.points)
 
-            points.append(FontPoint(x=x, y=y))
 
-        return points
+@dataclass
+class FontCenterlineGlyph:
+    """指定文字列から得た中心線群を表す。"""
 
-    def _cubic_bezier(
-        self,
-        p0: FontPoint,
-        p1: FontPoint,
-        p2: FontPoint,
-        p3: FontPoint,
-    ) -> List[FontPoint]:
-        """3次ベジェ曲線を点列化する。"""
-        points: List[FontPoint] = []
+    text: str
+    paths: List[FontCenterlinePath]
 
-        for index in range(1, self._curve_division + 1):
-            t = float(index) / float(self._curve_division)
-            one_minus_t = 1.0 - t
+    def __iter__(self) -> Iterator[FontCenterlinePath]:
+        """中心線を順に返す。"""
+        return iter(self.paths)
 
-            x = one_minus_t * one_minus_t * one_minus_t * p0.x
-            x = x + 3.0 * one_minus_t * one_minus_t * t * p1.x
-            x = x + 3.0 * one_minus_t * t * t * p2.x
-            x = x + t * t * t * p3.x
+    def __len__(self) -> int:
+        """中心線数を返す。"""
+        return len(self.paths)
 
-            y = one_minus_t * one_minus_t * one_minus_t * p0.y
-            y = y + 3.0 * one_minus_t * one_minus_t * t * p1.y
-            y = y + 3.0 * one_minus_t * t * t * p2.y
-            y = y + t * t * t * p3.y
 
-            points.append(FontPoint(x=x, y=y))
+@dataclass
+class FontMotionCommand:
+    """中心線から作成したXY相対移動命令を表す。"""
 
-        return points
+    pen: float
+    dx: float
+    dy: float
 
 
 def main() -> None:
-    """輪郭抽出を単体確認する。"""
-    font_file = Path("NotoSansCJKjp-Regular.otf")
-
-    if font_file.exists() is False:
-        print("NotoSansCJKjp-Regular.otf が見つからない。")
-        return
-
-    extractor = FontOutlineExtractor(
-        font_file=font_file,
-        height=40.0,
-        curve_division=8,
-    )
-
-    outline = extractor.extract_text(
-        text="島",
-        spacing=5.0,
+    """共通データ型の生成を確認する。"""
+    outline = FontOutlineGlyph(
+        text="A",
+        paths=[
+            FontOutlinePath(
+                points=[
+                    FontPoint(x=0.0, y=0.0),
+                    FontPoint(x=1.0, y=0.0),
+                    FontPoint(x=1.0, y=1.0),
+                ],
+                closed=True,
+            ),
+        ],
     )
 
     print(outline)
-    print(len(outline))
+    print(outline.shifted(x_offset=10.0, y_offset=5.0))
 
 
 if __name__ == "__main__":

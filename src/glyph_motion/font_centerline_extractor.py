@@ -1,11 +1,8 @@
 """
 塗りつぶし済み文字領域から中心線を抽出する。
 
-このモジュールは FontFilledGlyph を入力として受け取り、
-FontCenterlineGlyph を出力する。
-
-太さを持つ文字領域を細い線へ変換する処理を担当する。
-フォント読み込み、輪郭抽出、塗りつぶし、表示、移動命令生成は行わない。
+FontFilledGlyph を入力として受け取り、FontCenterlineGlyph を出力する。
+太さを持つ文字領域を、ロボットがなぞる候補になる細い線へ変換する。
 """
 
 from typing import Dict
@@ -26,7 +23,7 @@ PixelEdge = Tuple[PixelIndex, PixelIndex]
 
 
 class FontCenterlineExtractor:
-    """塗りつぶし済み文字領域から中心線を抽出するクラスである。"""
+    """塗りつぶし済み文字領域から中心線を抽出する。"""
 
     def extract(
         self,
@@ -83,7 +80,7 @@ class FontCenterlineExtractor:
 
         for row_index in range(row_count):
             for column_index in range(column_count):
-                if skeleton[row_index, column_index] is False:
+                if not bool(skeleton[row_index, column_index]):
                     continue
 
                 pixel = (
@@ -132,7 +129,7 @@ class FontCenterlineExtractor:
                 if neighbor_column >= column_count:
                     continue
 
-                if skeleton[neighbor_row, neighbor_column] is False:
+                if not bool(skeleton[neighbor_row, neighbor_column]):
                     continue
 
                 neighbors.append(
