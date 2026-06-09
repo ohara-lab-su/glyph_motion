@@ -1,211 +1,371 @@
-from dataclasses import dataclass
-from typing import Iterator, List, Tuple
+"""
+フォントファイルから指定文字列の輪郭座標を取り出す。
+
+このモジュールは、フォントのアウトライン命令を FontOutlineGlyph へ変換する。
+中心線化、塗りつぶし、表示、移動命令生成は行わない。
+"""
+
+from pathlib import Path
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
+
+from fontTools.pens.recordingPen import RecordingPen
+from fontTools.ttLib import TTFont
+
+from font_geometry import FontOutlineGlyph
+from font_geometry import FontOutlinePath
+from font_geometry import FontPoint
 
 
-@dataclass
-class MeshPoint:
-    """メッシュ座標上の一点を表すデータクラスである。
+class FontOutlineExtractor:
+    """フォントファイルから指定文字列の輪郭座標を生成する。"""
 
-    2次元平面上のX座標およびY座標を保持し、拡大縮小や平行移動の幾何変換機能を提供する。
-    """
+    def __init__(
+        self,
+        font_file: Path,
+        height: float,
+        curve_division: int,
+    ) -> None:
+        """フォントファイルと輪郭点列化条件を設定する。"""
+        if height <= 0.0:
+            raise ValueError("height は正の値である必要がある。")
 
-    x: float
-    y: float
+        if curve_division < 1:
+            raise ValueError("curve_division は1以上である必要がある。")
 
-    def as_tuple(self) -> Tuple[float, float]:
-        """座標をタプル形式で返す。
+        self._font_file = font_file
+        self._height = height
+        self._curve_division = curve_division
 
-        Returns:
-            Tuple[float, float]: (x, y) の座標タプル。
-        """
-        return self.x, self.y
+        self._font = TTFont(str(self._font_file))
+        self._cmap = self._font.getBestCmap()
+        self._glyph_set = self._font.getGlyphSet()
 
-    def scaled(self, scale: float) -> "MeshPoint":
-        """座標を原点を中心に拡大縮小した新しい点を返す。
+        units_per_em = float(self._font["head"].unitsPerEm)
+        self._scale = self._height / units_per_em
 
-        Args:
-            scale (float): 拡大縮小倍率。
+    def extract_text(
+        self,
+        text: str,
+        spacing: float,
+    ) -> FontOutlineGlyph:
+        """文字列全体の輪郭座標を取得する。"""
+        paths: List[FontOutlinePath] = []
+        x_offset = 0.0
 
-        Returns:
-            MeshPoint: 変換後の新しいMeshPointインスタンス。
-        """
-        return MeshPoint(
-            x=self.x * scale,
-            y=self.y * scale,
+        for character in text:
+            outline = self.extract_character(character=character)
+            shifted_outline = outline.shifted(
+                x_offset=x_offset,
+                y_offset=0.0,
+            )
+
+            for path in shifted_outline:
+                paths.append(path)
+
+            glyph_name = self._get_glyph_name(character=character)
+            advance_width = self._font["hmtx"].metrics[glyph_name][0]
+            x_offset = x_offset + float(advance_width) * self._scale
+            x_offset = x_offset + spacing
+
+        return FontOutlineGlyph(
+            text=text,
+            paths=paths,
         )
 
-    def shifted(self, x_offset: float, y_offset: float) -> "MeshPoint":
-        """座標を指定量だけ平行移動した新しい点を返す。
+    def extract_character(
+        self,
+        character: str,
+    ) -> FontOutlineGlyph:
+        """一文字の輪郭座標を取得する。"""
+        if len(character) != 1:
+            raise ValueError("character は1文字である必要がある。")
 
-        Args:
-            x_offset (float): X軸方向の移動量。
-            y_offset (float): Y軸方向の移動量。
+        glyph_name = self._get_glyph_name(character=character)
+        glyph = self._glyph_set[glyph_name]
 
-        Returns:
-            MeshPoint: 変換後の新しいMeshPointインスタンス。
-        """
-        return MeshPoint(
-            x=self.x + x_offset,
-            y=self.y + y_offset,
+        pen = RecordingPen()
+        glyph.draw(pen)
+
+        outline = self._recording_to_outline(
+            text=character,
+            recording=pen.value,
         )
 
+        return outline.scaled(scale=self._scale)
 
-@dataclass
-class MeshPath:
-    """一続きの点列で構成されるパスを表すデータクラスである。
+    def _get_glyph_name(
+        self,
+        character: str,
+    ) -> str:
+        """文字に対応するフォント内部グリフ名を返す。"""
+        code_point = ord(character)
 
-    複数のMeshPointを内包し、パスが閉じているかどうかのフラグを保持する。
-    """
+        if code_point not in self._cmap:
+            raise ValueError("フォントに含まれていない文字である。")
 
-    points: List[MeshPoint]
-    closed: bool
+        return self._cmap[code_point]
 
-    def __iter__(self) -> Iterator[MeshPoint]:
-        """パス内の点列を順に返すイテレータを取得する。
+    def _recording_to_outline(
+        self,
+        text: str,
+        recording: List[Tuple[str, Tuple[Any, ...]]],
+    ) -> FontOutlineGlyph:
+        """RecordingPenの命令列を輪郭点列へ変換する。"""
+        paths: List[FontOutlinePath] = []
 
-        Returns:
-            Iterator[MeshPoint]: 点列のイテレータ。
-        """
-        return iter(self.points)
+        current_points: List[FontPoint] = []
+        current_point: Optional[FontPoint] = None
+        start_point: Optional[FontPoint] = None
 
-    def __len__(self) -> int:
-        """パスを構成する点の総数を返す。
+        for command_name, command_args in recording:
+            if command_name == "moveTo":
+                if len(current_points) > 0:
+                    paths.append(
+                        FontOutlinePath(
+                            points=current_points,
+                            closed=False,
+                        )
+                    )
 
-        Returns:
-            int: 点の数。
-        """
-        return len(self.points)
+                raw_point = command_args[0]
+                current_point = FontPoint(
+                    x=float(raw_point[0]),
+                    y=float(raw_point[1]),
+                )
+                start_point = current_point
+                current_points = [current_point]
 
-    def append(self, point: MeshPoint) -> None:
-        """パスの末尾に新しい点を追加する。
+            elif command_name == "lineTo":
+                raw_point = command_args[0]
+                current_point = FontPoint(
+                    x=float(raw_point[0]),
+                    y=float(raw_point[1]),
+                )
+                current_points.append(current_point)
 
-        Args:
-            point (MeshPoint): 追加する点データ。
-        """
-        self.points.append(point)
+            elif command_name == "qCurveTo":
+                if current_point is not None:
+                    curve_points = self._qcurve_to_points(
+                        current_point=current_point,
+                        command_args=command_args,
+                    )
 
-    def scaled(self, scale: float) -> "MeshPath":
-        """パス全体を拡大縮小した新しいパスを返す。
+                    for point in curve_points:
+                        current_points.append(point)
 
-        Args:
-            scale (float): 拡大縮小倍率。
+                    if len(curve_points) > 0:
+                        current_point = curve_points[-1]
 
-        Returns:
-            MeshPath: 変換後の新しいMeshPathインスタンス。
-        """
-        points: List[MeshPoint] = []
-        for point in self.points:
-            points.append(point.scaled(scale=scale))
-        return MeshPath(
-            points=points,
-            closed=self.closed,
+            elif command_name == "curveTo":
+                if current_point is not None:
+                    curve_points = self._curve_to_points(
+                        current_point=current_point,
+                        command_args=command_args,
+                    )
+
+                    for point in curve_points:
+                        current_points.append(point)
+
+                    if len(curve_points) > 0:
+                        current_point = curve_points[-1]
+
+            elif command_name == "closePath":
+                if start_point is not None:
+                    current_points.append(start_point)
+
+                if len(current_points) > 0:
+                    paths.append(
+                        FontOutlinePath(
+                            points=current_points,
+                            closed=True,
+                        )
+                    )
+
+                current_points = []
+                current_point = None
+                start_point = None
+
+        if len(current_points) > 0:
+            paths.append(
+                FontOutlinePath(
+                    points=current_points,
+                    closed=False,
+                )
+            )
+
+        return FontOutlineGlyph(
+            text=text,
+            paths=paths,
         )
 
-    def shifted(self, x_offset: float, y_offset: float) -> "MeshPath":
-        """パス全体を平行移動した新しいパスを返す。
+    def _qcurve_to_points(
+        self,
+        current_point: FontPoint,
+        command_args: Tuple[Any, ...],
+    ) -> List[FontPoint]:
+        """TrueTypeの2次ベジェ命令を点列へ変換する。"""
+        q_points = list(command_args)
 
-        Args:
-            x_offset (float): X軸方向の移動量。
-            y_offset (float): Y軸方向の移動量。
+        if len(q_points) == 0:
+            return []
 
-        Returns:
-            MeshPath: 変換後の新しいMeshPathインスタンス。
-        """
-        points: List[MeshPoint] = []
-        for point in self.points:
-            points.append(point.shifted(x_offset=x_offset, y_offset=y_offset))
-        return MeshPath(
-            points=points,
-            closed=self.closed,
+        if q_points[-1] is None:
+            q_points = q_points[:-1]
+
+        if len(q_points) == 0:
+            return []
+
+        if len(q_points) == 1:
+            end_point = FontPoint(
+                x=float(q_points[0][0]),
+                y=float(q_points[0][1]),
+            )
+            return self._quadratic_bezier(
+                p0=current_point,
+                p1=current_point,
+                p2=end_point,
+            )
+
+        points: List[FontPoint] = []
+        p0 = current_point
+
+        for index in range(0, len(q_points) - 1):
+            raw_control = q_points[index]
+            raw_next = q_points[index + 1]
+
+            control_point = FontPoint(
+                x=float(raw_control[0]),
+                y=float(raw_control[1]),
+            )
+
+            if index == len(q_points) - 2:
+                end_point = FontPoint(
+                    x=float(raw_next[0]),
+                    y=float(raw_next[1]),
+                )
+            else:
+                end_point = FontPoint(
+                    x=0.5 * (float(raw_control[0]) + float(raw_next[0])),
+                    y=0.5 * (float(raw_control[1]) + float(raw_next[1])),
+                )
+
+            segment_points = self._quadratic_bezier(
+                p0=p0,
+                p1=control_point,
+                p2=end_point,
+            )
+
+            for point in segment_points:
+                points.append(point)
+
+            p0 = end_point
+
+        return points
+
+    def _curve_to_points(
+        self,
+        current_point: FontPoint,
+        command_args: Tuple[Any, ...],
+    ) -> List[FontPoint]:
+        """3次ベジェ命令を点列へ変換する。"""
+        point_1 = FontPoint(
+            x=float(command_args[0][0]),
+            y=float(command_args[0][1]),
+        )
+        point_2 = FontPoint(
+            x=float(command_args[1][0]),
+            y=float(command_args[1][1]),
+        )
+        point_3 = FontPoint(
+            x=float(command_args[2][0]),
+            y=float(command_args[2][1]),
         )
 
+        return self._cubic_bezier(
+            p0=current_point,
+            p1=point_1,
+            p2=point_2,
+            p3=point_3,
+        )
 
-@dataclass
-class GlyphMesh:
-    """文字グリフから得た複数のパスで構成されるメッシュ座標群を表すデータクラスである。"""
+    def _quadratic_bezier(
+        self,
+        p0: FontPoint,
+        p1: FontPoint,
+        p2: FontPoint,
+    ) -> List[FontPoint]:
+        """2次ベジェ曲線を点列化する。"""
+        points: List[FontPoint] = []
 
-    paths: List[MeshPath]
+        for index in range(1, self._curve_division + 1):
+            t = float(index) / float(self._curve_division)
+            one_minus_t = 1.0 - t
 
-    def __iter__(self) -> Iterator[MeshPath]:
-        """メッシュ内のパスを順に返すイテレータを取得する。
+            x = one_minus_t * one_minus_t * p0.x
+            x = x + 2.0 * one_minus_t * t * p1.x
+            x = x + t * t * p2.x
 
-        Returns:
-            Iterator[MeshPath]: パス列のイテレータ。
-        """
-        return iter(self.paths)
+            y = one_minus_t * one_minus_t * p0.y
+            y = y + 2.0 * one_minus_t * t * p1.y
+            y = y + t * t * p2.y
 
-    def __len__(self) -> int:
-        """メッシュを構成するパスの総数を返す。
+            points.append(FontPoint(x=x, y=y))
 
-        Returns:
-            int: パスの数。
-        """
-        return len(self.paths)
+        return points
 
-    def append(self, path: MeshPath) -> None:
-        """メッシュに新しいパスを追加する。
+    def _cubic_bezier(
+        self,
+        p0: FontPoint,
+        p1: FontPoint,
+        p2: FontPoint,
+        p3: FontPoint,
+    ) -> List[FontPoint]:
+        """3次ベジェ曲線を点列化する。"""
+        points: List[FontPoint] = []
 
-        Args:
-            path (MeshPath): 追加するパスデータ。
-        """
-        self.paths.append(path)
+        for index in range(1, self._curve_division + 1):
+            t = float(index) / float(self._curve_division)
+            one_minus_t = 1.0 - t
 
-    def extend(self, glyph_mesh: "GlyphMesh") -> None:
-        """別のGlyphMeshに含まれるすべてのパスを自身に追加して結合する。
+            x = one_minus_t * one_minus_t * one_minus_t * p0.x
+            x = x + 3.0 * one_minus_t * one_minus_t * t * p1.x
+            x = x + 3.0 * one_minus_t * t * t * p2.x
+            x = x + t * t * t * p3.x
 
-        Args:
-            glyph_mesh (GlyphMesh): 結合対象のGlyphMeshインスタンス。
-        """
-        for path in glyph_mesh:
-            self.paths.append(path)
+            y = one_minus_t * one_minus_t * one_minus_t * p0.y
+            y = y + 3.0 * one_minus_t * one_minus_t * t * p1.y
+            y = y + 3.0 * one_minus_t * t * t * p2.y
+            y = y + t * t * t * p3.y
 
-    def scaled(self, scale: float) -> "GlyphMesh":
-        """メッシュ全体を拡大縮小した新しいメッシュを返す。
+            points.append(FontPoint(x=x, y=y))
 
-        Args:
-            scale (float): 拡大縮小倍率。
-
-        Returns:
-            GlyphMesh: 変換後の新しいGlyphMeshインスタンス。
-        """
-        paths: List[MeshPath] = []
-        for path in self.paths:
-            paths.append(path.scaled(scale=scale))
-        return GlyphMesh(paths=paths)
-
-    def shifted(self, x_offset: float, y_offset: float) -> "GlyphMesh":
-        """メッシュ全体を平行移動した新しいメッシュを返す。
-
-        Args:
-            x_offset (float): X軸方向の移動量。
-            y_offset (float): Y軸方向の移動量。
-
-        Returns:
-            GlyphMesh: 変換後の新しいGlyphMeshインスタンス。
-        """
-        paths: List[MeshPath] = []
-        for path in self.paths:
-            paths.append(path.shifted(x_offset=x_offset, y_offset=y_offset))
-        return GlyphMesh(paths=paths)
+        return points
 
 
 def main() -> None:
-    """GlyphMeshおよび付随する幾何クラスの基本動作を検証する。"""
-    path = MeshPath(
-        points=[
-            MeshPoint(x=0.0, y=0.0),
-            MeshPoint(x=10.0, y=0.0),
-        ],
-        closed=False,
+    """輪郭抽出を単体確認する。"""
+    font_file = Path("NotoSansCJKjp-Regular.otf")
+
+    if font_file.exists() is False:
+        print("NotoSansCJKjp-Regular.otf が見つからない。")
+        return
+
+    extractor = FontOutlineExtractor(
+        font_file=font_file,
+        height=40.0,
+        curve_division=8,
     )
 
-    glyph_mesh = GlyphMesh(
-        paths=[path],
+    outline = extractor.extract_text(
+        text="島",
+        spacing=5.0,
     )
 
-    print(glyph_mesh)
-    print(glyph_mesh.scaled(scale=2.0))
-    print(glyph_mesh.shifted(x_offset=1.0, y_offset=2.0))
+    print(outline)
+    print(len(outline))
 
 
 if __name__ == "__main__":
