@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -33,14 +32,7 @@ class FontMeshViewer:
                 s=point_size,
             )
 
-        plt.gca().set_aspect(
-            "equal",
-            adjustable="box",
-        )
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.grid(True)
-        plt.show()
+        self._finish_plot()
 
     def show_lines(
         self,
@@ -63,6 +55,10 @@ class FontMeshViewer:
                 marker=".",
             )
 
+        self._finish_plot()
+
+    def _finish_plot(self) -> None:
+        """表示用の共通設定を行う。"""
         plt.gca().set_aspect(
             "equal",
             adjustable="box",

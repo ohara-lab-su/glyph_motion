@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from typing import List
 
 from font_geometry import GlyphMesh
@@ -13,6 +12,9 @@ class FontRasterizer:
         self,
         step: float,
     ) -> None:
+        if step <= 0.0:
+            raise ValueError("step は正の値である必要がある。")
+
         self._step = step
 
     def rasterize(
@@ -23,10 +25,11 @@ class FontRasterizer:
         rasterized_paths: List[MeshPath] = []
 
         for mesh_path in glyph_mesh:
-            rasterized_path = self._rasterize_path(
-                mesh_path=mesh_path,
+            rasterized_paths.append(
+                self._rasterize_path(
+                    mesh_path=mesh_path,
+                )
             )
-            rasterized_paths.append(rasterized_path)
 
         return GlyphMesh(
             paths=rasterized_paths,
@@ -45,8 +48,7 @@ class FontRasterizer:
                 closed=mesh_path.closed,
             )
 
-        first_point = mesh_path.points[0]
-        rasterized_points.append(first_point)
+        rasterized_points.append(mesh_path.points[0])
 
         for point_index in range(1, len(mesh_path.points)):
             start_point = mesh_path.points[point_index - 1]
@@ -89,14 +91,12 @@ class FontRasterizer:
         for division_index in range(1, division_count + 1):
             ratio = float(division_index) / float(division_count)
 
-            x = start_point.x + dx * ratio
-            y = start_point.y + dy * ratio
-
-            point = MeshPoint(
-                x=x,
-                y=y,
+            points.append(
+                MeshPoint(
+                    x=start_point.x + dx * ratio,
+                    y=start_point.y + dy * ratio,
+                )
             )
-            points.append(point)
 
         return points
 

@@ -1,7 +1,8 @@
-#!/usr/bin/env python
-
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.ttLib import TTFont
@@ -49,11 +50,9 @@ class FontGlyphMesh:
             recording=pen.value,
         )
 
-        scaled_glyph_mesh = self._scale_glyph_mesh(
-            glyph_mesh=glyph_mesh,
+        return glyph_mesh.scaled(
+            scale=self._scale,
         )
-
-        return scaled_glyph_mesh
 
     def get_text_mesh(
         self,
@@ -72,14 +71,14 @@ class FontGlyphMesh:
                 character=character,
             )
 
-            shifted_mesh = self._shift_glyph_mesh(
-                glyph_mesh=character_mesh,
+            shifted_mesh = character_mesh.shifted(
                 x_offset=x_offset,
                 y_offset=0.0,
             )
 
-            for mesh_path in shifted_mesh:
-                result_mesh.append(mesh_path)
+            result_mesh.extend(
+                glyph_mesh=shifted_mesh,
+            )
 
             glyph_name = self._get_glyph_name(
                 character=character,
@@ -99,7 +98,9 @@ class FontGlyphMesh:
         code_point = ord(character)
 
         if code_point not in self._cmap:
-            raise ValueError(character)
+            raise ValueError(
+                "フォントに含まれていない文字である: {}".format(character)
+            )
 
         glyph_name = self._cmap[code_point]
 
@@ -121,11 +122,12 @@ class FontGlyphMesh:
         for command_name, command_args in recording:
             if command_name == "moveTo":
                 if len(current_points) > 0:
-                    mesh_path = MeshPath(
-                        points=current_points,
-                        closed=False,
+                    glyph_mesh.append(
+                        path=MeshPath(
+                            points=current_points,
+                            closed=False,
+                        )
                     )
-                    glyph_mesh.append(mesh_path)
 
                 point = command_args[0]
                 current_point = MeshPoint(
@@ -137,7 +139,7 @@ class FontGlyphMesh:
                     current_point,
                 ]
 
-            if command_name == "lineTo":
+            elif command_name == "lineTo":
                 point = command_args[0]
                 current_point = MeshPoint(
                     x=float(point[0]),
@@ -145,7 +147,7 @@ class FontGlyphMesh:
                 )
                 current_points.append(current_point)
 
-            if command_name == "qCurveTo":
+            elif command_name == "qCurveTo":
                 if current_point is not None:
                     curve_points = self._qcurve_to_points(
                         current_point=current_point,
@@ -158,7 +160,7 @@ class FontGlyphMesh:
                     if len(curve_points) > 0:
                         current_point = curve_points[-1]
 
-            if command_name == "curveTo":
+            elif command_name == "curveTo":
                 if current_point is not None:
                     curve_points = self._curve_to_points(
                         current_point=current_point,
@@ -171,27 +173,29 @@ class FontGlyphMesh:
                     if len(curve_points) > 0:
                         current_point = curve_points[-1]
 
-            if command_name == "closePath":
+            elif command_name == "closePath":
                 if start_point is not None:
                     current_points.append(start_point)
 
                 if len(current_points) > 0:
-                    mesh_path = MeshPath(
-                        points=current_points,
-                        closed=True,
+                    glyph_mesh.append(
+                        path=MeshPath(
+                            points=current_points,
+                            closed=True,
+                        )
                     )
-                    glyph_mesh.append(mesh_path)
 
                 current_points = []
                 current_point = None
                 start_point = None
 
         if len(current_points) > 0:
-            mesh_path = MeshPath(
-                points=current_points,
-                closed=False,
+            glyph_mesh.append(
+                path=MeshPath(
+                    points=current_points,
+                    closed=False,
+                )
             )
-            glyph_mesh.append(mesh_path)
 
         return glyph_mesh
 
@@ -206,23 +210,39 @@ class FontGlyphMesh:
         if len(q_points) < 2:
             return []
 
-        control = q_points[0]
-        end = q_points[-1]
+        points: List[MeshPoint] = []
+        p0 = current_point
 
-        control_point = MeshPoint(
-            x=float(control[0]),
-            y=float(control[1]),
-        )
-        end_point = MeshPoint(
-            x=float(end[0]),
-            y=float(end[1]),
-        )
+        for index in range(0, len(q_points) - 1):
+            raw_control = q_points[index]
+            raw_end = q_points[index + 1]
 
-        points = self._quadratic_bezier(
-            p0=current_point,
-            p1=control_point,
-            p2=end_point,
-        )
+            control_point = MeshPoint(
+                x=float(raw_control[0]),
+                y=float(raw_control[1]),
+            )
+
+            end_point = MeshPoint(
+                x=float(raw_end[0]),
+                y=float(raw_end[1]),
+            )
+
+            if index < len(q_points) - 2:
+                end_point = MeshPoint(
+                    x=0.5 * (float(raw_control[0]) + float(raw_end[0])),
+                    y=0.5 * (float(raw_control[1]) + float(raw_end[1])),
+                )
+
+            segment_points = self._quadratic_bezier(
+                p0=p0,
+                p1=control_point,
+                p2=end_point,
+            )
+
+            for segment_point in segment_points:
+                points.append(segment_point)
+
+            p0 = end_point
 
         return points
 
@@ -245,14 +265,12 @@ class FontGlyphMesh:
             y=float(command_args[2][1]),
         )
 
-        points = self._cubic_bezier(
+        return self._cubic_bezier(
             p0=current_point,
             p1=point_1,
             p2=point_2,
             p3=point_3,
         )
-
-        return points
 
     def _quadratic_bezier(
         self,
@@ -274,11 +292,12 @@ class FontGlyphMesh:
             y = y + 2.0 * (1.0 - t) * t * p1.y
             y = y + t * t * p2.y
 
-            point = MeshPoint(
-                x=x,
-                y=y,
+            points.append(
+                MeshPoint(
+                    x=x,
+                    y=y,
+                )
             )
-            points.append(point)
 
         return points
 
@@ -305,69 +324,14 @@ class FontGlyphMesh:
             y = y + 3.0 * (1.0 - t) * t * t * p2.y
             y = y + t ** 3 * p3.y
 
-            point = MeshPoint(
-                x=x,
-                y=y,
+            points.append(
+                MeshPoint(
+                    x=x,
+                    y=y,
+                )
             )
-            points.append(point)
 
         return points
-
-    def _scale_glyph_mesh(
-        self,
-        glyph_mesh: GlyphMesh,
-    ) -> GlyphMesh:
-        """フォント座標を表示用座標へスケール変換する。"""
-        scaled_mesh = GlyphMesh(
-            paths=[],
-        )
-
-        for mesh_path in glyph_mesh:
-            scaled_points: List[MeshPoint] = []
-
-            for point in mesh_path:
-                scaled_point = MeshPoint(
-                    x=point.x * self._scale,
-                    y=point.y * self._scale,
-                )
-                scaled_points.append(scaled_point)
-
-            scaled_path = MeshPath(
-                points=scaled_points,
-                closed=mesh_path.closed,
-            )
-            scaled_mesh.append(scaled_path)
-
-        return scaled_mesh
-
-    def _shift_glyph_mesh(
-        self,
-        glyph_mesh: GlyphMesh,
-        x_offset: float,
-        y_offset: float,
-    ) -> GlyphMesh:
-        """GlyphMeshを平行移動する。"""
-        shifted_mesh = GlyphMesh(
-            paths=[],
-        )
-
-        for mesh_path in glyph_mesh:
-            shifted_points: List[MeshPoint] = []
-
-            for point in mesh_path:
-                shifted_point = MeshPoint(
-                    x=point.x + x_offset,
-                    y=point.y + y_offset,
-                )
-                shifted_points.append(shifted_point)
-
-            shifted_path = MeshPath(
-                points=shifted_points,
-                closed=mesh_path.closed,
-            )
-            shifted_mesh.append(shifted_path)
-
-        return shifted_mesh
 
 
 def main() -> None:
@@ -389,7 +353,7 @@ def main() -> None:
     )
 
     print(glyph_mesh)
-    print(len(glyph_mesh))
+    print("path_count =", len(glyph_mesh))
 
 
 if __name__ == "__main__":
