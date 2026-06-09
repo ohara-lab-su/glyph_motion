@@ -3,6 +3,8 @@ from typing import List
 import matplotlib.pyplot as plt
 
 from font_geometry import GlyphMesh
+from font_geometry import MeshPath
+from font_geometry import MeshPoint
 
 
 class FontMeshViewer:
@@ -30,7 +32,10 @@ class FontMeshViewer:
                 s=point_size,
             )
 
-        plt.gca().set_aspect("equal", adjustable="box")
+        plt.gca().set_aspect(
+            "equal",
+            adjustable="box",
+        )
         plt.xlabel("x")
         plt.ylabel("y")
         plt.grid(True)
@@ -40,7 +45,7 @@ class FontMeshViewer:
         self,
         glyph_mesh: GlyphMesh,
     ) -> None:
-        """GlyphMeshを線として表示する。"""
+        """GlyphMeshを線で表示する。"""
         plt.figure()
 
         for mesh_path in glyph_mesh:
@@ -57,8 +62,52 @@ class FontMeshViewer:
                 marker=".",
             )
 
-        plt.gca().set_aspect("equal", adjustable="box")
+        plt.gca().set_aspect(
+            "equal",
+            adjustable="box",
+        )
         plt.xlabel("x")
         plt.ylabel("y")
         plt.grid(True)
         plt.show()
+
+
+def main() -> None:
+    glyph_mesh = GlyphMesh(
+        paths=[
+            MeshPath(
+                points=[
+                    MeshPoint(
+                        x=0.0,
+                        y=0.0,
+                    ),
+                    MeshPoint(
+                        x=10.0,
+                        y=0.0,
+                    ),
+                    MeshPoint(
+                        x=10.0,
+                        y=10.0,
+                    ),
+                    MeshPoint(
+                        x=0.0,
+                        y=10.0,
+                    ),
+                    MeshPoint(
+                        x=0.0,
+                        y=0.0,
+                    ),
+                ],
+                closed=True,
+            ),
+        ],
+    )
+
+    viewer = FontMeshViewer()
+    viewer.show_lines(
+        glyph_mesh=glyph_mesh,
+    )
+
+
+if __name__ == "__main__":
+    main()
