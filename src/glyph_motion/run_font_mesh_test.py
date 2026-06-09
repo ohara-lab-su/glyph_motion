@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fong_glyph_mesh import FontGlyphMesh
+from font_glyph_mesh import FontGlyphMesh
 from font_mesh_viewer import FontMeshViewer
 from font_rasterizer import FontRasterizer
 

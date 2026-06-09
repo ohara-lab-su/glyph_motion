@@ -1,8 +1,7 @@
+#!/usr/bin/env python
+
 from pathlib import Path
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import Any, List, Optional, Tuple
 
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.ttLib import TTFont

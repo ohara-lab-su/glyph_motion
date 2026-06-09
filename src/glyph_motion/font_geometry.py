@@ -1,7 +1,6 @@
+#!/usr/bin/env python
 from dataclasses import dataclass
-from typing import Iterator
-from typing import List
-from typing import Tuple
+from typing import Iterator, List, Tuple
 
 
 @dataclass
