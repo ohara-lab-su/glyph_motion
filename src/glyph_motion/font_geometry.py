@@ -199,8 +199,49 @@ class FontCenterlineGlyph:
 
 
 @dataclass
+class FontStrokePath:
+    """一回ペンを下ろして書く一本の筆画を表す。
+
+    FontCenterlinePath は、画像処理で抽出された中心線である。
+    FontStrokePath は、ロボットが実際に一筆でなぞる単位である。
+
+    paths の分割は、ペンアップ・ペンダウンの単位に対応する。
+    """
+
+    points: List[FontPoint]
+
+    def __iter__(self) -> Iterator[FontPoint]:
+        """筆画上の点を順に返す。"""
+        return iter(self.points)
+
+    def __len__(self) -> int:
+        """筆画上の点数を返す。"""
+        return len(self.points)
+
+
+@dataclass
+class FontStrokeGlyph:
+    """筆順付き文字データを表す。
+
+    paths の順序が、そのままロボットに書かせる順序である。
+    各 FontStrokePath は、一回ペンを下ろして書く単位である。
+    """
+
+    text: str
+    paths: List[FontStrokePath]
+
+    def __iter__(self) -> Iterator[FontStrokePath]:
+        """筆画を筆順通りに返す。"""
+        return iter(self.paths)
+
+    def __len__(self) -> int:
+        """筆画数を返す。"""
+        return len(self.paths)
+
+
+@dataclass
 class FontMotionCommand:
-    """中心線から作成したXY相対移動命令を表す。"""
+    """中心線または筆画から作成したXY相対移動命令を表す。"""
 
     pen: float
     dx: float
@@ -209,22 +250,32 @@ class FontMotionCommand:
 
 def main() -> None:
     """共通データ型の生成を確認する。"""
-    outline = FontOutlineGlyph(
+    stroke_glyph = FontStrokeGlyph(
         text="A",
         paths=[
-            FontOutlinePath(
+            FontStrokePath(
                 points=[
                     FontPoint(x=0.0, y=0.0),
-                    FontPoint(x=1.0, y=0.0),
-                    FontPoint(x=1.0, y=1.0),
+                    FontPoint(x=10.0, y=20.0),
                 ],
-                closed=True,
+            ),
+            FontStrokePath(
+                points=[
+                    FontPoint(x=10.0, y=20.0),
+                    FontPoint(x=20.0, y=0.0),
+                ],
+            ),
+            FontStrokePath(
+                points=[
+                    FontPoint(x=5.0, y=10.0),
+                    FontPoint(x=15.0, y=10.0),
+                ],
             ),
         ],
     )
 
-    print(outline)
-    print(outline.shifted(x_offset=10.0, y_offset=5.0))
+    print(stroke_glyph)
+    print(len(stroke_glyph))
 
 
 if __name__ == "__main__":
