@@ -4,6 +4,81 @@
 
 ---
 
+## [0.0.2] - KanjiVG ストローク対応版
+
+### 追加
+
+#### font_stroke_builder.py
+
+筆順付きストロークデータを扱うための処理を追加した。
+
+機能:
+
+- FontStrokeGlyph 生成
+- FontStrokePath 管理
+- 筆画単位のデータ管理
+- アルファベット用ストローク定義
+
+#### font_kanjivg_stroke_loader.py
+
+KanjiVG SVG から筆順付きストロークを読み込む処理を追加した。
+
+機能:
+
+- KanjiVG SVG 読み込み
+- SVG Path 解析
+- SVG 座標変換
+- 二次ベジェ曲線対応
+- 三次ベジェ曲線対応
+- 筆順保持
+- FontStrokeGlyph 生成
+
+#### run_font_kanjivg_stroke_test.py
+
+KanjiVG ストローク表示確認用スクリプトを追加した。
+
+機能:
+
+- KanjiVG 読み込み確認
+- Stroke 表示確認
+- 筆順確認
+
+#### run_font_kanjivg_motion_test.py
+
+KanjiVG ストロークからモーション生成を確認するスクリプトを追加した。
+
+機能:
+
+- KanjiVG 読み込み
+- Motion 生成
+- Motion 表示
+
+### 変更
+
+#### font_geometry.py
+
+筆順付きストローク表現を追加した。
+
+追加したデータ構造:
+
+- FontStrokePath
+- FontStrokeGlyph
+
+#### font_motion_builder.py
+
+中心線だけでなくストロークデータからもモーション生成できるように変更した。
+
+追加:
+
+- build_from_stroke()
+
+対応入力:
+
+```text
+FontCenterlineGlyph
+FontStrokeGlyph
+```
+
 ## [0.0.1] - 中心線生成パイプライン動作確認版
 
 ### 追加
