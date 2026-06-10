@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "glyph_motion"
-version = "0.0.0"
+version = "0.0.1"
 
 description = "Generate robot handwriting motions from text strings."
 authors = [
@@ -31,7 +31,9 @@ dependencies = [
 "sphinx-autobuild",
 "sphinx-rtd-theme",
 "sphinxcontrib-napoleon",
-"linkify-it-py"
+"linkify-it-py",
+    #
+    "scikit-image",
 ]
 
 [tool.pytest.ini_options]

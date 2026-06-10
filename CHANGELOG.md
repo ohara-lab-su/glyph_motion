@@ -2,6 +2,146 @@
 
 このファイルでは、本プロジェクトの主要な変更履歴を記録する。
 
+---
+
+## [0.0.1] - 中心線生成パイプライン動作確認版
+
+### 追加
+
+#### font_viewer.py
+
+処理パイプライン全体を目視確認できる統合確認処理を追加した。
+
+確認可能な工程:
+
+- FontOutlineGlyph
+- FontFilledGlyph
+- FontCenterlineGlyph
+- Filled + Centerline 重ね表示
+
+#### font_centerline_cleaner.py
+
+中心線抽出後の後処理を正式にパイプラインへ組み込んだ。
+
+機能:
+
+- 重複点除去
+- 短線分除去
+- 点列再サンプリング
+- 点間隔均一化
+
+#### font_motion_builder.py
+
+中心線整理済みデータを入力として扱う構成へ変更した。
+
+機能:
+
+- FontCenterlineCleaner の注入対応
+- 中心線整理後のモーション生成
+- 中心線再構築機能
+
+### 変更
+
+#### font_outline_extractor.py
+
+TrueType Collection (TTC) フォントへ対応した。
+
+追加:
+
+- font_number 指定
+- TTC 内フォント選択
+
+macOS 標準フォントを直接利用可能となった。
+
+#### font_viewer.py
+
+単体表示テストからパイプライン確認テストへ変更した。
+
+変更前:
+
+```text
+Outline
+↓
+Filled
+```
+
+変更後:
+
+```text
+Outline
+↓
+Filled
+↓
+Centerline
+↓
+Filled + Centerline
+```
+
+### 動作確認
+
+macOS 環境にて以下を確認した。
+
+- ヒラギノ角ゴシック TTC 読み込み
+- フォント輪郭抽出
+- 文字領域生成
+- スケルトン化
+- 中心線抽出
+- 中心線整理
+- 描画表示
+
+### 現在の処理フロー
+
+```text
+FontOutlineExtractor
+↓
+FontGlyphFiller
+↓
+FontCenterlineExtractor
+↓
+FontCenterlineCleaner
+↓
+FontMotionBuilder
+```
+
+### 現在の到達点
+
+本バージョンでは、
+
+```text
+フォント
+↓
+輪郭
+↓
+塗りつぶし
+↓
+中心線
+↓
+モーション命令
+```
+
+までの基本パイプラインが動作することを確認した。
+
+### 現在の制限事項
+
+- 中心線はスケルトン化ベース
+- 筆順情報は存在しない
+- ストローク構造は復元しない
+- 分岐部で不自然な線が発生する場合がある
+- Path の接続順序最適化は未実装
+- ペン移動経路最適化は未実装
+- ロボット固有座標系への変換は未実装
+- Z軸制御は未実装
+
+### 次版予定
+
+- FontMotionBuilder の改善
+- Path 接続順序最適化
+- ペンアップ移動最短化
+- 中心線品質向上
+- 日本語漢字での品質評価
+- アウトライン直接中心線化アルゴリズムの検討
+- ロボット制御系との接続
+ 
 ## [0.0.0] - 初期試作版
 
 ### 追加
