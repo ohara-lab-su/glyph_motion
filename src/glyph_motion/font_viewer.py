@@ -1,7 +1,7 @@
 """
 フォント処理の各段階を画面表示する。
 
-このモジュールは、次の3段階を目視確認するための表示クラスを定義する。
+このモジュールは、次の4段階を目視確認するための表示クラスを定義する。
 
 1. FontOutlineGlyph
    フォントから取得した輪郭線を線として表示する。
@@ -12,8 +12,11 @@
 3. FontCenterlineGlyph
    文字領域から抽出した中心線を線として表示する。
 
+4. FontStrokeGlyph
+   筆順付きの stroke を線として表示する。
+
 このモジュールは表示だけを担当する。
-フォント読み込み、輪郭抽出、塗りつぶし、中心線抽出、移動命令生成は行わない。
+フォント読み込み、輪郭抽出、塗りつぶし、中心線抽出、筆順生成、移動命令生成は行わない。
 """
 
 from typing import List
@@ -24,6 +27,7 @@ import numpy as np
 from font_geometry import FontCenterlineGlyph
 from font_geometry import FontFilledGlyph
 from font_geometry import FontOutlineGlyph
+from font_geometry import FontStrokeGlyph
 
 
 class FontViewer:
@@ -107,6 +111,46 @@ class FontViewer:
             title="centerline: {}".format(centerline_glyph.text),
         )
 
+    def show_stroke(
+        self,
+        stroke_glyph: FontStrokeGlyph,
+    ) -> None:
+        """筆順付き stroke を線として表示する。
+
+        FontStrokeGlyph の paths の順序は、ロボットが実際に書く順序である。
+        各 FontStrokePath は、一回ペンを下ろして書く単位である。
+        """
+        plt.figure()
+
+        for path_index, path in enumerate(stroke_glyph):
+            x_values: List[float] = []
+            y_values: List[float] = []
+
+            for point in path:
+                x_values.append(point.x)
+                y_values.append(point.y)
+
+            plt.plot(
+                x_values,
+                y_values,
+                marker=".",
+                label="stroke {}".format(path_index + 1),
+            )
+
+            if len(path) > 0:
+                start_point = path.points[0]
+                plt.text(
+                    start_point.x,
+                    start_point.y,
+                    str(path_index + 1),
+                )
+
+        plt.legend()
+
+        self._finish_plot(
+            title="stroke: {}".format(stroke_glyph.text),
+        )
+
     def show_filled_with_centerline(
         self,
         filled_glyph: FontFilledGlyph,
@@ -183,81 +227,20 @@ class FontViewer:
 
 def main() -> None:
     """FontViewerの表示機能を単体確認する。"""
-    from pathlib import Path
+    from font_alphabet_stroke_builder import FontAlphabetStrokeBuilder
 
-    from font_centerline_cleaner import FontCenterlineCleaner
-    from font_centerline_extractor import FontCenterlineExtractor
-    from font_fill_glyph import FontGlyphFiller
-    from font_outline_extractor import FontOutlineExtractor
-
-    # font_file = Path("NotoSansCJKjp-Regular.otf")
-    font_file = Path("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc")
-
-    if font_file.exists() is False:
-        print(f"{font_file} が見つからない。")
-        return
-
-    extractor = FontOutlineExtractor(
-        font_file=font_file,
+    stroke_builder = FontAlphabetStrokeBuilder(
         height=40.0,
-        curve_division=8,
-        font_number=0,
-    )
-
-    outline = extractor.extract_text(
-        text="A",
         spacing=5.0,
     )
 
-    filler = FontGlyphFiller(
-        pixel_size=0.5,
-        margin=2.0,
-    )
-
-    filled = filler.fill(
-        outline_glyph=outline,
-    )
-
-    # --------------- 基本テスト
-    # viewer = FontViewer()
-    # アウトラインフォント表示
-    # viewer.show_outline(outline)
-    # ２値化して埋める
-    # viewer.show_filled(filled)
-
-    # --------------- 中心線取り出して表示
-    centerline_extractor = FontCenterlineExtractor()
-
-    raw_centerline = centerline_extractor.extract(
-        filled_glyph=filled,
-    )
-
-    centerline_cleaner = FontCenterlineCleaner(
-        min_path_length=1.0,
-        point_spacing=1.0,
-    )
-
-    centerline = centerline_cleaner.clean(
-        centerline_glyph=raw_centerline,
+    stroke_glyph = stroke_builder.build_text(
+        text="A",
     )
 
     viewer = FontViewer()
-
-    viewer.show_outline(
-        outline_glyph=outline,
-    )
-
-    viewer.show_filled(
-        filled_glyph=filled,
-    )
-
-    viewer.show_centerline(
-        centerline_glyph=centerline,
-    )
-
-    viewer.show_filled_with_centerline(
-        filled_glyph=filled,
-        centerline_glyph=centerline,
+    viewer.show_stroke(
+        stroke_glyph=stroke_glyph,
     )
 
 

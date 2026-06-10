@@ -1,14 +1,14 @@
 """
-中心線データをXY相対移動命令へ変換する。
+中心線データまたは筆順付き stroke データをXY相対移動命令へ変換する。
 
-このモジュールは FontCenterlineGlyph を入力として受け取り、
+このモジュールは FontCenterlineGlyph または FontStrokeGlyph を入力として受け取り、
 FontMotionCommand の列を出力する。
 
-入力される FontCenterlineGlyph は、FontCenterlineCleaner で整理済みの
-中心線であることを前提にする。
+FontCenterlineGlyph は、太い文字から抽出された細い中心線である。
+この線を点列として順にたどり、現在位置から次点までの差分 dx, dy を作る。
 
-FontCenterlineCleaner を外から渡した場合は、このクラス内部で中心線整理を
-行ってから相対移動命令を作る。
+FontStrokeGlyph は、筆順付きの描画単位である。
+FontStrokeGlyph の各 FontStrokePath は、一回ペンを下ろして書く単位である。
 
 このモジュールでは、ロボット固有APIは呼ばない。
 ここで作るのは、既存のロボット制御プログラムへ渡す前段の
@@ -23,10 +23,11 @@ from font_geometry import FontCenterlineGlyph
 from font_geometry import FontCenterlinePath
 from font_geometry import FontMotionCommand
 from font_geometry import FontPoint
+from font_geometry import FontStrokeGlyph
 
 
 class FontMotionBuilder:
-    """中心線をXY相対移動命令列へ変換するクラスである。"""
+    """中心線または筆順付き stroke をXY相対移動命令列へ変換するクラスである。"""
 
     def __init__(
         self,
@@ -82,6 +83,65 @@ class FontMotionBuilder:
 
             for point_index in range(1, len(centerline_path.points)):
                 next_point = centerline_path.points[point_index]
+
+                command = FontMotionCommand(
+                    pen=1.0,
+                    dx=next_point.x - current_point.x,
+                    dy=next_point.y - current_point.y,
+                )
+                commands.append(command)
+
+                current_point = next_point
+
+            pen_up = FontMotionCommand(
+                pen=0.0,
+                dx=0.0,
+                dy=0.0,
+            )
+            commands.append(pen_up)
+
+        return commands
+
+    def build_from_stroke(
+        self,
+        stroke_glyph: FontStrokeGlyph,
+    ) -> List[FontMotionCommand]:
+        """筆順付き stroke データからXY相対移動命令列を作る。
+
+        FontStrokeGlyph の各 FontStrokePath は、一回ペンを下ろして書く単位である。
+        A の横棒のように一筆書きできない部分は、別 path として扱う。
+        """
+        commands: List[FontMotionCommand] = []
+
+        current_point = FontPoint(
+            x=0.0,
+            y=0.0,
+        )
+
+        for stroke_path in stroke_glyph:
+            if len(stroke_path) == 0:
+                continue
+
+            start_point = stroke_path.points[0]
+
+            move_to_start = FontMotionCommand(
+                pen=0.0,
+                dx=start_point.x - current_point.x,
+                dy=start_point.y - current_point.y,
+            )
+            commands.append(move_to_start)
+
+            current_point = start_point
+
+            pen_down = FontMotionCommand(
+                pen=1.0,
+                dx=0.0,
+                dy=0.0,
+            )
+            commands.append(pen_down)
+
+            for point_index in range(1, len(stroke_path.points)):
+                next_point = stroke_path.points[point_index]
 
                 command = FontMotionCommand(
                     pen=1.0,
@@ -160,50 +220,26 @@ class FontMotionBuilder:
 
 
 def main() -> None:
-    """中心線整理とXY相対移動命令化を単体確認する。"""
-    from font_geometry import FontCenterlineGlyph
-    from font_geometry import FontCenterlinePath
-    from font_viewer import FontViewer
+    """筆順付き stroke からXY相対移動命令を作る処理を単体確認する。"""
+    from font_alphabet_stroke_builder import FontAlphabetStrokeBuilder
 
-    centerline = FontCenterlineGlyph(
-        text="test",
-        paths=[
-            FontCenterlinePath(
-                points=[
-                    FontPoint(x=0.0, y=0.0),
-                    FontPoint(x=0.0, y=0.0),
-                    FontPoint(x=10.0, y=0.0),
-                    FontPoint(x=10.0, y=10.0),
-                ],
-            ),
-        ],
+    stroke_builder = FontAlphabetStrokeBuilder(
+        height=40.0,
+        spacing=5.0,
     )
 
-    cleaner = FontCenterlineCleaner(
-        min_path_length=1.0,
-        point_spacing=2.0,
+    stroke_glyph = stroke_builder.build_text(
+        text="A",
     )
 
-    builder = FontMotionBuilder(
-        centerline_cleaner=cleaner,
-    )
+    builder = FontMotionBuilder()
 
-    commands = builder.build(
-        centerline_glyph=centerline,
+    commands = builder.build_from_stroke(
+        stroke_glyph=stroke_glyph,
     )
 
     for command in commands:
         print(command)
-
-    rebuilt_centerline = builder.rebuild_centerline(
-        commands=commands,
-        text=centerline.text,
-    )
-
-    viewer = FontViewer()
-    viewer.show_centerline(
-        centerline_glyph=rebuilt_centerline,
-    )
 
 
 if __name__ == "__main__":
