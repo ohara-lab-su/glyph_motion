@@ -22,7 +22,8 @@ def main() -> None:
     )
 
     stroke_glyph = stroke_builder.build_text(
-        text="A",
+        # text="A",
+         text="B",
     )
 
     viewer = FontViewer()
