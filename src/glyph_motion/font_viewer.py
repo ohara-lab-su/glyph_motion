@@ -185,23 +185,27 @@ def main() -> None:
     """FontViewerの表示機能を単体確認する。"""
     from pathlib import Path
 
+    from font_centerline_cleaner import FontCenterlineCleaner
+    from font_centerline_extractor import FontCenterlineExtractor
     from font_fill_glyph import FontGlyphFiller
     from font_outline_extractor import FontOutlineExtractor
 
-    font_file = Path("NotoSansCJKjp-Regular.otf")
+    # font_file = Path("NotoSansCJKjp-Regular.otf")
+    font_file = Path("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc")
 
     if font_file.exists() is False:
-        print("NotoSansCJKjp-Regular.otf が見つからない。")
+        print(f"{font_file} が見つからない。")
         return
 
     extractor = FontOutlineExtractor(
         font_file=font_file,
         height=40.0,
         curve_division=8,
+        font_number=0,
     )
 
     outline = extractor.extract_text(
-        text="島",
+        text="A",
         spacing=5.0,
     )
 
@@ -214,9 +218,47 @@ def main() -> None:
         outline_glyph=outline,
     )
 
+    # --------------- 基本テスト
+    # viewer = FontViewer()
+    # アウトラインフォント表示
+    # viewer.show_outline(outline)
+    # ２値化して埋める
+    # viewer.show_filled(filled)
+
+    # --------------- 中心線取り出して表示
+    centerline_extractor = FontCenterlineExtractor()
+
+    raw_centerline = centerline_extractor.extract(
+        filled_glyph=filled,
+    )
+
+    centerline_cleaner = FontCenterlineCleaner(
+        min_path_length=1.0,
+        point_spacing=1.0,
+    )
+
+    centerline = centerline_cleaner.clean(
+        centerline_glyph=raw_centerline,
+    )
+
     viewer = FontViewer()
-    viewer.show_outline(outline)
-    viewer.show_filled(filled)
+
+    viewer.show_outline(
+        outline_glyph=outline,
+    )
+
+    viewer.show_filled(
+        filled_glyph=filled,
+    )
+
+    viewer.show_centerline(
+        centerline_glyph=centerline,
+    )
+
+    viewer.show_filled_with_centerline(
+        filled_glyph=filled,
+        centerline_glyph=centerline,
+    )
 
 
 if __name__ == "__main__":

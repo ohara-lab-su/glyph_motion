@@ -27,6 +27,7 @@ class FontOutlineExtractor:
         font_file: Path,
         height: float,
         curve_division: int,
+        font_number: int = 0,
     ) -> None:
         """フォントファイルと輪郭点列化条件を設定する。"""
         if height <= 0.0:
@@ -39,7 +40,12 @@ class FontOutlineExtractor:
         self._height = height
         self._curve_division = curve_division
 
-        self._font = TTFont(str(font_file))
+        # self._font = TTFont(str(font_file))
+        self._font = TTFont(
+            str(font_file),
+            fontNumber=font_number,
+        )
+
         self._cmap = self._font.getBestCmap()
         self._glyph_set = self._font.getGlyphSet()
 
