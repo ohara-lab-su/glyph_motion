@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 アルファベット文字列から筆順付き stroke データを生成する。
 
 このモジュールは、通常フォントのアウトラインを使わない。

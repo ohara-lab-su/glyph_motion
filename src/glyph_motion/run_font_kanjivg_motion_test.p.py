@@ -1,4 +1,6 @@
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG から漢字の筆順付き stroke を読み込み、XY相対移動命令へ変換する確認用スクリプトである。
 
 このスクリプトは、次の流れを確認する。

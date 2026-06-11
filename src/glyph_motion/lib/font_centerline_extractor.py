@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 塗りつぶし済み文字領域から中心線を抽出する。
 
 FontFilledGlyph を入力として受け取り、FontCenterlineGlyph を出力する。

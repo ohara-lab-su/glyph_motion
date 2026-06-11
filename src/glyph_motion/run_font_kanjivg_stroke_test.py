@@ -1,4 +1,6 @@
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG から漢字の筆順付き stroke を読み込み、表示する確認用スクリプトである。
 
 このスクリプトは、KanjiVG SVG -> FontStrokeGlyph の確認に使う。

@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG の SVG ファイルから筆順付き stroke データを読み込む。
  [oai_citation:1‡KanjiVG](https://kanjivg.tagaini.net/svg-format.html?utm_source=chatgpt.com)つ SVG path を読み取り、FontStrokeGlyph に変換する。
 

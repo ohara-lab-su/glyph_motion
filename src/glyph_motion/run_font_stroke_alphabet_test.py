@@ -1,4 +1,6 @@
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 筆順付きアルファベット stroke からモーション命令を生成する確認用スクリプトである。
 
 このスクリプトは通常フォントを使わない。
@@ -23,7 +25,7 @@ def main() -> None:
 
     stroke_glyph = stroke_builder.build_text(
         # text="A",
-         text="B",
+        text="B",
     )
 
     viewer = FontViewer()

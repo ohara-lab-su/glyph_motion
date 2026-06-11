@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 中心線データまたは筆順付き stroke データをXY相対移動命令へ変換する。
 
 このモジュールは FontCenterlineGlyph または FontStrokeGlyph を入力として受け取り、
@@ -18,12 +21,12 @@ FontStrokeGlyph の各 FontStrokePath は、一回ペンを下ろして書く単
 from typing import List
 from typing import Optional
 
-from font_centerline_cleaner import FontCenterlineCleaner
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontCenterlinePath
-from font_geometry import FontMotionCommand
-from font_geometry import FontPoint
-from font_geometry import FontStrokeGlyph
+from glyph_motion.lib.font_centerline_cleaner import FontCenterlineCleaner
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontCenterlinePath
+from glyph_motion.lib.font_geometry import FontMotionCommand
+from glyph_motion.lib.font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontStrokeGlyph
 
 
 class FontMotionBuilder:

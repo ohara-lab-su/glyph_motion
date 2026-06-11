@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォント処理の各段階を画面表示する。
 
 このモジュールは、次の4段階を目視確認するための表示クラスを定義する。

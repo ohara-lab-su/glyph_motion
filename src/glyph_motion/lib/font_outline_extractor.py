@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォントファイルから指定文字列の輪郭を取り出す。
 
 このモジュールは、フォントが持つベクトル輪郭を FontOutlineGlyph へ変換する。

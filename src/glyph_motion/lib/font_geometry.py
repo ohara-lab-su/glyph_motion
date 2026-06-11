@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォント文字を中心線へ変換する処理で共有する幾何データ型を定義する。
 
 このモジュールは、処理段階の入出力データだけを保持する。

@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォント輪郭を格子上の塗りつぶし領域へ変換する。
 
 このモジュールは FontOutlineGlyph を入力し、
