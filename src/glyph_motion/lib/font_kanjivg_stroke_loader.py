@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG の SVG ファイルから筆順付き stroke データを読み込む。
  [oai_citation:1‡KanjiVG](https://kanjivg.tagaini.net/svg-format.html?utm_source=chatgpt.com)つ SVG path を読み取り、FontStrokeGlyph に変換する。
 
@@ -19,13 +22,11 @@ FontMotionBuilder
 import re
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import List, Optional, Tuple
 
-from font_geometry import FontPoint
-from font_geometry import FontStrokeGlyph
-from font_geometry import FontStrokePath
+from glyph_motion.lib.font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontStrokeGlyph
+from glyph_motion.lib.font_geometry import FontStrokePath
 
 
 SvgCommand = Tuple[str, List[float]]
@@ -707,7 +708,7 @@ class SvgPathSampler:
 
 def main() -> None:
     """KanjiVG stroke 読み込みを単体確認する。"""
-    from font_viewer import FontViewer
+    from glyph_motion.lib.run_font_viewer import FontViewer
 
     loader = FontKanjiVGStrokeLoader(
         kanjivg_directory=Path("kanjivg/kanji"),

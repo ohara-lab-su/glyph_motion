@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 中心線抽出後の線分を、ロボット移動命令へ渡しやすい点列へ整理する。
 
 FontCenterlineExtractor が出力する FontCenterlineGlyph は、画像処理で得た
@@ -15,9 +18,9 @@ FontCenterlineGlyph を返す。
 
 from typing import List
 
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontCenterlinePath
-from font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontCenterlinePath
+from glyph_motion.lib.font_geometry import FontPoint
 
 
 class FontCenterlineCleaner:
@@ -169,10 +172,8 @@ class FontCenterlineCleaner:
                 ratio = distance_from_start / segment_length
 
                 new_point = FontPoint(
-                    x=segment_start.x
-                    + (segment_end.x - segment_start.x) * ratio,
-                    y=segment_start.y
-                    + (segment_end.y - segment_start.y) * ratio,
+                    x=segment_start.x + (segment_end.x - segment_start.x) * ratio,
+                    y=segment_start.y + (segment_end.y - segment_start.y) * ratio,
                 )
 
                 resampled_points.append(new_point)

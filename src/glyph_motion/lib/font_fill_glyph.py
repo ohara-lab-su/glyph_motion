@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォント輪郭を格子上の塗りつぶし領域へ変換する。
 
 このモジュールは FontOutlineGlyph を入力し、
@@ -13,8 +16,8 @@ from typing import List
 import numpy as np
 from matplotlib.path import Path as MatplotlibPath
 
-from font_geometry import FontFilledGlyph
-from font_geometry import FontOutlineGlyph
+from glyph_motion.lib.font_geometry import FontFilledGlyph
+from glyph_motion.lib.font_geometry import FontOutlineGlyph
 
 
 class FontGlyphFiller:

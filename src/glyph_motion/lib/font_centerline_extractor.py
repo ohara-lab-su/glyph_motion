@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 塗りつぶし済み文字領域から中心線を抽出する。
 
 FontFilledGlyph を入力として受け取り、FontCenterlineGlyph を出力する。
@@ -12,10 +15,10 @@ from typing import Tuple
 
 from skimage.morphology import skeletonize
 
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontCenterlinePath
-from font_geometry import FontFilledGlyph
-from font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontCenterlinePath
+from glyph_motion.lib.font_geometry import FontFilledGlyph
+from glyph_motion.lib.font_geometry import FontPoint
 
 
 PixelIndex = Tuple[int, int]

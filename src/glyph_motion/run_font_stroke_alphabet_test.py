@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 筆順付きアルファベット stroke からモーション命令を生成する確認用スクリプトである。
 
 このスクリプトは通常フォントを使わない。
@@ -9,9 +12,9 @@ FontAlphabetStrokeBuilder が持つ内蔵 stroke 定義を使って、
 outline -> filled -> centerline -> motion の経路は、既存機能として別に残す。
 """
 
-from font_alphabet_stroke_builder import FontAlphabetStrokeBuilder
-from font_motion_builder import FontMotionBuilder
-from font_viewer import FontViewer
+from glyph_motion.lib.font_alphabet_stroke_builder import FontAlphabetStrokeBuilder
+from glyph_motion.lib.font_viewer import FontViewer
+from glyph_motion.font_motion_builder import FontMotionBuilder
 
 
 def main() -> None:
@@ -23,7 +26,7 @@ def main() -> None:
 
     stroke_glyph = stroke_builder.build_text(
         # text="A",
-         text="B",
+        text="B",
     )
 
     viewer = FontViewer()

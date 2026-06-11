@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG から漢字の筆順付き stroke を読み込み、XY相対移動命令へ変換する確認用スクリプトである。
 
 このスクリプトは、次の流れを確認する。
@@ -16,14 +19,15 @@ stroke ごとに分かれているか確認する。
 
 from pathlib import Path
 
-from font_kanjivg_stroke_loader import FontKanjiVGStrokeLoader
-from font_motion_builder import FontMotionBuilder
-from font_viewer import FontViewer
+from glyph_motion.lib.font_kanjivg_stroke_loader import FontKanjiVGStrokeLoader
+from glyph_motion.lib.font_viewer import FontViewer
+from glyph_motion.font_motion_builder import FontMotionBuilder
 
 
 def main() -> None:
     """KanjiVG stroke から相対移動命令を生成する。"""
-    kanjivg_directory = Path("kanjivg/kanji")
+    # kanjivg_directory = Path("kanjivg/kanji")
+    kanjivg_directory = Path("/Users/nakada/Desktop/data/kanjiVG")
 
     loader = FontKanjiVGStrokeLoader(
         kanjivg_directory=kanjivg_directory,

@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 フォントファイルから指定文字列の輪郭を取り出す。
 
 このモジュールは、フォントが持つベクトル輪郭を FontOutlineGlyph へ変換する。
@@ -6,17 +9,15 @@
 """
 
 from pathlib import Path
-from typing import Any
-from typing import List
-from typing import Optional
+from typing import Any, List, Optional, Tuple
 from typing import Tuple
 
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.ttLib import TTFont
 
-from font_geometry import FontOutlineGlyph
-from font_geometry import FontOutlinePath
-from font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontOutlineGlyph
+from glyph_motion.lib.font_geometry import FontOutlinePath
+from glyph_motion.lib.font_geometry import FontPoint
 
 
 class FontOutlineExtractor:

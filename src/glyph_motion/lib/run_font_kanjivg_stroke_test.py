@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 KanjiVG から漢字の筆順付き stroke を読み込み、表示する確認用スクリプトである。
 
 このスクリプトは、KanjiVG SVG -> FontStrokeGlyph の確認に使う。
@@ -13,14 +16,15 @@ kanjivg/kanji/05cf6.svg
 
 from pathlib import Path
 
-from font_kanjivg_stroke_loader import FontKanjiVGStrokeLoader
-from font_viewer import FontViewer
+from glyph_motion.lib.font_kanjivg_stroke_loader import FontKanjiVGStrokeLoader
+from glyph_motion.lib.font_viewer import FontViewer
 
 
 def main() -> None:
     """KanjiVG stroke を読み込み、筆順付き stroke として表示する。"""
     # kanjivg_directory = Path("kanjivg/kanji")
-    kanjivg_directory = Path(__file__).resolve().parent / "data" / "kanjiVG"
+    # kanjivg_directory = Path(__file__).resolve().parent / "data" / "kanjiVG"
+    kanjivg_directory = Path("/Users/nakada/Desktop/data/kanjiVG")
 
     loader = FontKanjiVGStrokeLoader(
         kanjivg_directory=kanjivg_directory,

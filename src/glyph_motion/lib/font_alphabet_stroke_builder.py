@@ -1,4 +1,7 @@
+#!/usr/bin/env python
 """
+K.NAKADA, kengo.nakada@gmail.com
+
 アルファベット文字列から筆順付き stroke データを生成する。
 
 このモジュールは、通常フォントのアウトラインを使わない。
@@ -17,13 +20,11 @@ stroke_division に従って細かい点列へ分割する。
 より細かいロボット移動命令を生成できる。
 """
 
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Dict, List, Tuple
 
-from font_geometry import FontPoint
-from font_geometry import FontStrokeGlyph
-from font_geometry import FontStrokePath
+from glyph_motion.lib.font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontStrokeGlyph
+from glyph_motion.lib.font_geometry import FontStrokePath
 
 
 RawStroke = List[Tuple[float, float]]
