@@ -18,9 +18,9 @@ FontCenterlineGlyph を返す。
 
 from typing import List
 
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontCenterlinePath
-from font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontCenterlinePath
+from glyph_motion.lib.font_geometry import FontPoint
 
 
 class FontCenterlineCleaner:

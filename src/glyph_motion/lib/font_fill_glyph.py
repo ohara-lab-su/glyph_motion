@@ -16,8 +16,8 @@ from typing import List
 import numpy as np
 from matplotlib.path import Path as MatplotlibPath
 
-from font_geometry import FontFilledGlyph
-from font_geometry import FontOutlineGlyph
+from glyph_motion.lib.font_geometry import FontFilledGlyph
+from glyph_motion.lib.font_geometry import FontOutlineGlyph
 
 
 class FontGlyphFiller:

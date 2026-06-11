@@ -27,10 +27,10 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontFilledGlyph
-from font_geometry import FontOutlineGlyph
-from font_geometry import FontStrokeGlyph
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontFilledGlyph
+from glyph_motion.lib.font_geometry import FontOutlineGlyph
+from glyph_motion.lib.font_geometry import FontStrokeGlyph
 
 
 class FontViewer:
@@ -238,7 +238,8 @@ def main() -> None:
     )
 
     stroke_glyph = stroke_builder.build_text(
-        text="A",
+        # text="A",
+        text="B",
     )
 
     viewer = FontViewer()

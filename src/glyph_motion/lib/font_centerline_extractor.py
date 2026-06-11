@@ -15,10 +15,10 @@ from typing import Tuple
 
 from skimage.morphology import skeletonize
 
-from font_geometry import FontCenterlineGlyph
-from font_geometry import FontCenterlinePath
-from font_geometry import FontFilledGlyph
-from font_geometry import FontPoint
+from glyph_motion.lib.font_geometry import FontCenterlineGlyph
+from glyph_motion.lib.font_geometry import FontCenterlinePath
+from glyph_motion.lib.font_geometry import FontFilledGlyph
+from glyph_motion.lib.font_geometry import FontPoint
 
 
 PixelIndex = Tuple[int, int]

@@ -21,6 +21,8 @@ TTF/OTF/TTC からアウトラインを読む。主クラスは FontOutlineExtra
 ## font_kanjivg_stroke_loader.py
 KanjiVG SVG から筆順付き stroke を読む。本命寄り。主クラスは FontKanjiVGStrokeLoader, SvgPathSampler。
 
-## font_viewer.py
+## run_font_viewer.py
 各段階の表示。主クラスは FontViewer。表示対象は outline, filled, centerline, stroke。
 
+## run_font_kanjivg_motion_test.p.py
+KanjiVG stroke から motion 生成確認。ファイル名の .p.py は直した方がよいです。
