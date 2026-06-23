@@ -5,6 +5,93 @@
 
 ## [0.2.0] - KanjiVG ストロークを使って、cobotta で実際に文字を書く (ese774 versiono)
 
+### 追加
+#### font_bcap_cobotta_writer.py
+
+COBOTTA b-CAP を用いて任意文字列を書く制御クラス `CobottaBcapFontWriter` を追加した。
+
+追加した主な機能は以下である。
+
+- `CobottaBcap` を用いた b-CAP 接続、TakeArm、MotorOn、GiveArm、切断処理
+- `FontRobotWriter` による文字列から筆順付きロボット命令列への変換
+- `CobottaBcap.robo_dmove(..., coord_mode="P")` による相対 P 移動実行
+- `write_text()` による任意文字列の書字
+- `preview_text()` によるロボット非投入の命令確認
+- `halt()` による停止
+- `reset_error()` によるエラーリセット
+- `get_current_position()` による現在 P 座標取得
+- `get_config()` / `set_config()` による設定取得・更新
+- 文字サイズ、文字間隔、ペンアップ高さ、曲線分割数の設定
+- 描画速度、移動速度、ペンアップ速度、ペンダウン速度、アプローチ速度の設定
+- 加速度、減速度、命令投入間隔、非筆記移動分割幅の設定
+- 現在位置原点、最初の筆画始点原点、絶対原点の切替
+- 現在 Z または絶対 Z による書字面設定
+- 文字座標から COBOTTA P 座標への符号、倍率、姿勢差分の設定
+
+#### server_fastapi/
+
+`CobottaBcapFontWriter` を ese774_frame の透過 API として公開する FastAPI サーバー構成を追加した。
+
+追加した主なファイルは以下である。
+
+- `server_fastapi/spec_writer.py`
+- `server_fastapi/server.py`
+- `server_fastapi/models/common.py`
+- `server_fastapi/models/writer.py`
+- `server_fastapi/routers/font_bcap_cobotta_writer_router.py`
+- `server_fastapi/clients/sync_cobotta_writer_client.py`
+- `server_fastapi/clients/async_cobotta_writer_client.py`
+
+公開 API は以下である。
+
+- `connect`
+- `prepare`
+- `disconnect`
+- `close`
+- `halt`
+- `reset_error`
+- `is_connected`
+- `get_current_position`
+- `get_config`
+- `set_config`
+- `set_text_parameters`
+- `set_motion_parameters`
+- `set_origin_parameters`
+- `set_transform_parameters`
+- `preview_text`
+- `write_text`
+
+#### examples/
+
+ese774_frame によるサーバー起動例とクライアント利用例を追加した。
+
+追加した主なファイルは以下である。
+
+- `examples/run_font_bcap_cobotta_writer_server.py`
+- `examples/client_write_text.py`
+
+### 変更
+
+#### run_font_bcap_cobotta_writer.py
+
+実行スクリプト内に直接置いていた COBOTTA b-CAP 書字処理を、`CobottaBcapFontWriter` を利用する薄い実行例へ整理した。
+
+### 設計メモ
+
+COBOTTA 文字書字処理は、文字列や設定値を API で渡し、文字生成、筆順展開、モーション生成、b-CAP 実行をサーバー側で完結させる構成とした。通信量が少なく、連続大容量データ転送を必要としないため、gRPC ではなく ese774_frame による FastAPI 透過 API 化を採用した。
+
+### 動作確認
+
+COBOTTA 実機で、少なくとも b-CAP 接続、TakeArm、MotorOn、`robo_dmove()` による文字書字動作を確認した。
+
+### 既知の課題
+
+- API 経由の連続書字時における排他制御は未整理である。
+- 書字中の pause/resume は未実装である。
+- 原点・書字面 Z の運用ルールは実機調整を通じてさらに整理する必要がある。
+- 可動範囲外エラーを事前に検出する幾何チェックは未実装である。
+- 軌跡の最適化、筆画間移動の最短化、速度プロファイル最適化は未実装である。
+
 ## [0.1.0] - KanjiVG ストロークを使って、cobotta で実際に文字を書く
 
 cobotta2 モジュールを用いる
