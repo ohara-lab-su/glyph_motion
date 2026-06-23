@@ -123,9 +123,7 @@ class BcapFontCobottaWriter:
             dpose = self._to_bcap_dpose(command)
             speed = self._resolve_speed(command)
 
-            for split_index, split_dpose in enumerate(
-                split_dpose_if_needed(dpose, command.pen_down)
-            ):
+            for split_index, split_dpose in enumerate(split_dpose_if_needed(dpose, command.pen_down)):
                 logging.info(
                     "command=%d split=%d stroke=%d point=%d pen_down=%s speed=%s dpose=%s",
                     index,
@@ -204,9 +202,7 @@ def split_dpose_if_needed(dpose: Sequence[float], pen_down: bool) -> List[List[f
     ]
 
 
-def normalize_commands_for_origin_mode(
-    commands: List[FontRobotMotionCommand],
-) -> List[FontRobotMotionCommand]:
+def normalize_commands_for_origin_mode(commands: List[FontRobotMotionCommand]) -> List[FontRobotMotionCommand]:
     """ORIGIN_MODE に従って、文字座標の初期基準を補正する。
 
     current_as_origin では、現在位置を文字座標 (0, 0) とするので補正しない。
@@ -313,9 +309,7 @@ def prepare_start_pose(bcap: CobottaBcap) -> None:
 
     # 3. 書字面 Z へ降ろす。以後、生成命令の最初で PEN_LIFT_HEIGHT_MM だけ上がる。
     current_after_xy = get_current_position(bcap)
-    safe_move(
-        bcap, [0.0, 0.0, surface_z - current_after_xy[2], 0.0, 0.0, 0.0], TRAVEL_SPEED
-    )
+    safe_move(bcap, [0.0, 0.0, surface_z - current_after_xy[2], 0.0, 0.0, 0.0], TRAVEL_SPEED)
 
 
 def safe_move(bcap: CobottaBcap, dpose: Sequence[float], speed: int) -> None:
