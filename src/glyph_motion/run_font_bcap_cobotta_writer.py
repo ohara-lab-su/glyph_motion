@@ -36,11 +36,22 @@ KANJIVG_DIRECTORY = Path("/Users/nakada/Desktop/data/kanjiVG")
 TEXT = "島根"
 LAYOUT = "horizontal"  # "horizontal" or "vertical"
 
-# 文字サイズ。単位はロボット座標へ渡す mm 相当として扱う。
+# 文字サイズ。KanjiVG/フォント内部座標をこの高さ[mm]に正規化してから、
+# ロボット座標系へ渡す。文字の実寸はここで決まる。
 CHARACTER_HEIGHT_MM = 40.0
 CHARACTER_SPACING_MM = 5.0
 PEN_LIFT_HEIGHT_MM = 5.0
 CURVE_DIVISION = 20
+
+# 書字面の実機座標。
+# ROBOT_ORIGIN_X_MM, ROBOT_ORIGIN_Y_MM は、文字座標 (0, 0) を置く紙面上の原点である。
+# ROBOT_SURFACE_Z_MM は、ペン先が紙面に接触する Z 座標である。
+# 実行時は最初に (origin_x, origin_y, surface_z + pen_lift_height) へ移動し、
+# その後、筆画ごとに Z を下げて書く。
+MOVE_TO_TARGET_ORIGIN_ON_START = True
+ROBOT_ORIGIN_X_MM = 300.0
+ROBOT_ORIGIN_Y_MM = 0.0
+ROBOT_SURFACE_Z_MM = 120.0
 
 # COBOTTA 速度設定。CobottaBcap.set_speed() に渡す値である。
 DRAWING_SPEED = 10
@@ -81,8 +92,55 @@ class BcapFontCobottaWriter:
         self._bcap = bcap
         self._last_speed: Optional[int] = None
 
+    def move_to_target_origin_up(self) -> None:
+        """現在位置から、書字原点のペンアップ位置へ相対移動する。
+
+        target = (ROBOT_ORIGIN_X_MM, ROBOT_ORIGIN_Y_MM, ROBOT_SURFACE_Z_MM + PEN_LIFT_HEIGHT_MM)
+        である。姿勢は現在姿勢を維持し、XYZ だけを合わせる。
+        """
+        if self._bcap is None:
+            logging.info(
+                "dry-run move_to_target_origin_up target=(%.3f, %.3f, %.3f)",
+                ROBOT_ORIGIN_X_MM,
+                ROBOT_ORIGIN_Y_MM,
+                ROBOT_SURFACE_Z_MM + PEN_LIFT_HEIGHT_MM,
+            )
+            return
+
+        current = self._bcap.get_current_position()
+        if (
+            current is False
+            or not isinstance(current, (list, tuple))
+            or len(current) < 3
+        ):
+            raise RuntimeError("CobottaBcap.get_current_position() failed")
+
+        target_z = ROBOT_SURFACE_Z_MM + PEN_LIFT_HEIGHT_MM
+        dpose = [
+            ROBOT_ORIGIN_X_MM - float(current[0]),
+            ROBOT_ORIGIN_Y_MM - float(current[1]),
+            target_z - float(current[2]),
+            0.0,
+            0.0,
+            0.0,
+        ]
+
+        self._set_speed_if_needed(int(TRAVEL_SPEED))
+        logging.info("move_to_target_origin_up dpose=%s", dpose)
+        ok = self._bcap.robo_dmove(dpose, coord_mode="P")
+        if ok is False:
+            raise RuntimeError(
+                "CobottaBcap.robo_dmove() failed in move_to_target_origin_up"
+            )
+
+        if MOVE_INTERVAL_SEC > 0.0:
+            time.sleep(MOVE_INTERVAL_SEC)
+
     def execute(self, commands: Iterable[FontRobotMotionCommand]) -> None:
         """命令列を順に COBOTTA へ投入する。"""
+        if MOVE_TO_TARGET_ORIGIN_ON_START:
+            self.move_to_target_origin_up()
+
         for index, command in enumerate(commands):
             dpose = self._to_bcap_dpose(command)
             speed = self._resolve_speed(command)
@@ -138,7 +196,12 @@ class BcapFontCobottaWriter:
 
 
 def build_commands() -> List[FontRobotMotionCommand]:
-    """KanjiVG からロボット筆記用相対移動命令列を作る。"""
+    """KanjiVG からロボット筆記用相対移動命令列を作る。
+
+    CHARACTER_HEIGHT_MM が一文字の高さを決める。
+    生成される命令は、書字原点のペンアップ位置から始まる相対移動である。
+    書字面 Z と紙面上の原点 XY は BcapFontCobottaWriter 側で扱う。
+    """
     writer = FontRobotWriter(
         kanjivg_directory=KANJIVG_DIRECTORY,
         height=CHARACTER_HEIGHT_MM,
