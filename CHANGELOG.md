@@ -2,6 +2,53 @@
 
 このファイルでは、本プロジェクトの主要な変更履歴を記録する。
 
+
+## [0.1.0] - KanjiVG ストロークを使って、cobotta で実際に文字を書く
+
+cobotta2 モジュールを用いる
+
+### font_motion_builder.py
+
+フォントのストロークデータをロボット非依存の相対移動命令列へ変換する機能を追加した。
+
+機能:
+- ストロークごとの相対移動生成
+- 曲線分割
+- ペンアップ移動の生成
+- 文字サイズ指定
+- 文字間隔指定
+
+### font_robot_motion_builder.py
+
+ロボット向け書字命令への変換層を追加した。
+
+機能:
+- FontMotionCommand を FontRobotMotionCommand へ変換
+- ペンアップ／ペンダウン状態管理
+- 書字速度・移動速度設定
+- Z方向退避量設定
+
+### font_robot_writer.py
+
+文字列からロボット書字命令列を生成する高水準 API を追加した。
+
+機能:
+- 横書き
+- 縦書き
+- KanjiVG を利用した筆順生成
+- 文字列全体の命令列生成
+
+### run_font_bcap_cobotta_writer.py
+
+COBOTTA b-CAP を用いた実行サンプルを追加した。
+
+機能:
+- FontRobotMotionCommand の実行
+- CobottaBcap.robo_dmove() による高速相対移動
+- TakeArm / MotorOn / GiveArm の実行
+- 速度・加減速設定
+- KanjiVG ディレクトリ設定
+- Dry Run モード
 ---
 
 ## [0.0.2] - KanjiVG ストローク対応版

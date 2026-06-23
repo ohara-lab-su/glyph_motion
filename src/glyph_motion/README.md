@@ -1,9 +1,9 @@
 # README
 
+ロボットに全く依存しないライブラリ
 
 ## font_motion_builder.py
 抽象的な XY 相対移動命令生成。主クラスは FontMotionBuilder。
-
 
 ## font_robot_writer.py
 write("島根") 的な上位 I/F。主クラスは FontRobotWriter。
