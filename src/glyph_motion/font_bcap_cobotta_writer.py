@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-K.NAKADA, kengo.nakada@gmail.com
-
 COBOTTA b-CAP を用いて筆順付き文字を書く制御クラスを定義する。
 
 本モジュールは run スクリプトではなく、サーバーやクライアントから利用する
@@ -14,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -113,7 +112,33 @@ class CobottaBcapFontWriter:
         for key, value in kwargs.items():
             if not hasattr(self.config, key):
                 raise KeyError("unknown config key: {}".format(key))
+            if key == "kanjivg_directory" and value is not None:
+                value = Path(str(value))
             setattr(self.config, key, value)
+
+    def get_config(self) -> Dict[str, object]:
+        """現在設定を返す。ese774_frame から呼ぶ設定取得 API である。"""
+        return self.to_dict()
+
+    def set_config(self, values: Dict[str, Any]) -> Dict[str, object]:
+        """設定値を dict で更新する。ese774_frame から呼ぶ設定更新 API である。"""
+        self.update_config(**values)
+        return self.to_dict()
+
+    def is_connected(self) -> bool:
+        """b-CAP オブジェクトを保持しているかを返す。"""
+        return self._bcap is not None
+
+    def disconnect(self) -> bool:
+        """ese774_frame から呼ぶ切断 API である。"""
+        self.close()
+        return True
+
+    def reset_error(self) -> bool:
+        """COBOTTA エラーをリセットする。"""
+        bcap = self._require_bcap()
+        result = bcap.reset_error()
+        return bool(result is not False)
 
     def set_text_parameters(
         self,
@@ -198,6 +223,39 @@ class CobottaBcapFontWriter:
             self.config.robot_surface_z = float(robot_surface_z)
         if approach_lift_height_mm is not None:
             self.config.approach_lift_height_mm = float(approach_lift_height_mm)
+
+    def set_transform_parameters(
+        self,
+        *,
+        robot_x_sign: Optional[float] = None,
+        robot_y_sign: Optional[float] = None,
+        robot_z_sign: Optional[float] = None,
+        robot_x_scale: Optional[float] = None,
+        robot_y_scale: Optional[float] = None,
+        robot_z_scale: Optional[float] = None,
+        robot_drx: Optional[float] = None,
+        robot_dry: Optional[float] = None,
+        robot_drz: Optional[float] = None,
+    ) -> None:
+        """文字座標から COBOTTA 相対 P 座標への写像を更新する。"""
+        if robot_x_sign is not None:
+            self.config.robot_x_sign = float(robot_x_sign)
+        if robot_y_sign is not None:
+            self.config.robot_y_sign = float(robot_y_sign)
+        if robot_z_sign is not None:
+            self.config.robot_z_sign = float(robot_z_sign)
+        if robot_x_scale is not None:
+            self.config.robot_x_scale = float(robot_x_scale)
+        if robot_y_scale is not None:
+            self.config.robot_y_scale = float(robot_y_scale)
+        if robot_z_scale is not None:
+            self.config.robot_z_scale = float(robot_z_scale)
+        if robot_drx is not None:
+            self.config.robot_drx = float(robot_drx)
+        if robot_dry is not None:
+            self.config.robot_dry = float(robot_dry)
+        if robot_drz is not None:
+            self.config.robot_drz = float(robot_drz)
 
     def connect(self) -> None:
         """COBOTTA b-CAP へ接続する。"""
@@ -326,6 +384,39 @@ class CobottaBcapFontWriter:
             "config": self.to_dict(),
         }
 
+    def preview_text(
+        self,
+        text: str,
+        layout: Optional[str] = None,
+        max_commands: int = 20,
+    ) -> Dict[str, object]:
+        """ロボットへ投入せず、生成される命令の概要を返す。"""
+        commands = self.build_commands(text=text, layout=layout)
+        preview = [
+            self.command_to_dict(command)
+            for command in commands[: max(0, int(max_commands))]
+        ]
+        return {
+            "text": text,
+            "layout": layout or self.config.layout,
+            "command_count": len(commands),
+            "preview_count": len(preview),
+            "commands": preview,
+            "config": self.to_dict(),
+        }
+
+    def command_to_dict(self, command: FontRobotMotionCommand) -> Dict[str, object]:
+        """FontRobotMotionCommand を JSON 化しやすい dict へ変換する。"""
+        return {
+            "dx": float(command.dx),
+            "dy": float(command.dy),
+            "dz": float(command.dz),
+            "pen_down": bool(command.pen_down),
+            "speed": None if command.speed is None else float(command.speed),
+            "stroke_index": int(command.stroke_index),
+            "point_index": int(command.point_index),
+        }
+
     def execute_commands(self, commands: Iterable[FontRobotMotionCommand]) -> None:
         """FontRobotMotionCommand 列を COBOTTA b-CAP の相対移動へ変換して実行する。"""
         bcap = self._require_bcap()
@@ -333,9 +424,7 @@ class CobottaBcapFontWriter:
             dpose = self.to_bcap_dpose(command)
             speed = self.resolve_speed(command)
 
-            for split_index, split_dpose in enumerate(
-                self.split_dpose_if_needed(dpose, command.pen_down)
-            ):
+            for split_index, split_dpose in enumerate(self.split_dpose_if_needed(dpose, command.pen_down)):
                 if self._is_zero_move(split_dpose) and self.config.skip_zero_move:
                     continue
 
@@ -366,9 +455,7 @@ class CobottaBcapFontWriter:
         if self.config.surface_z_mode == "absolute":
             surface_z = float(self.config.robot_surface_z)
         elif self.config.surface_z_mode != "current":
-            raise ValueError(
-                "unknown surface_z_mode: {}".format(self.config.surface_z_mode)
-            )
+            raise ValueError("unknown surface_z_mode: {}".format(self.config.surface_z_mode))
 
         self._logger.info("current P: %s", current)
         self._logger.info("surface_z: %s", surface_z)
@@ -378,21 +465,14 @@ class CobottaBcapFontWriter:
             if self.config.surface_z_mode == "absolute":
                 dz = surface_z - current[2]
                 if abs(dz) > self.config.zero_move_epsilon:
-                    self.safe_move(
-                        [0.0, 0.0, dz, 0.0, 0.0, 0.0], self.config.approach_speed
-                    )
+                    self.safe_move([0.0, 0.0, dz, 0.0, 0.0, 0.0], self.config.approach_speed)
             return
 
         if self.config.origin_mode != "absolute_origin":
             raise ValueError("unknown origin_mode: {}".format(self.config.origin_mode))
 
-        safe_z = (
-            surface_z
-            + float(self.config.approach_lift_height_mm) * self.config.robot_z_sign
-        )
-        self.safe_move(
-            [0.0, 0.0, safe_z - current[2], 0.0, 0.0, 0.0], self.config.approach_speed
-        )
+        safe_z = surface_z + float(self.config.approach_lift_height_mm) * self.config.robot_z_sign
+        self.safe_move([0.0, 0.0, safe_z - current[2], 0.0, 0.0, 0.0], self.config.approach_speed)
 
         current_after_z = self.get_current_position()
         dx = float(self.config.robot_origin_x) - current_after_z[0]
@@ -400,10 +480,7 @@ class CobottaBcapFontWriter:
         self.safe_move([dx, dy, 0.0, 0.0, 0.0, 0.0], self.config.approach_speed)
 
         current_after_xy = self.get_current_position()
-        self.safe_move(
-            [0.0, 0.0, surface_z - current_after_xy[2], 0.0, 0.0, 0.0],
-            self.config.approach_speed,
-        )
+        self.safe_move([0.0, 0.0, surface_z - current_after_xy[2], 0.0, 0.0, 0.0], self.config.approach_speed)
 
     def safe_move(self, dpose: Sequence[float], speed: int) -> None:
         """速度設定後、必要なら分割して相対移動する。"""
@@ -467,27 +544,15 @@ class CobottaBcapFontWriter:
     def resolve_speed(self, command: FontRobotMotionCommand) -> int:
         """命令種別から実行速度を決める。"""
         if command.pen_down:
-            if (
-                abs(command.dz) > 0.0
-                and abs(command.dx) == 0.0
-                and abs(command.dy) == 0.0
-            ):
+            if abs(command.dz) > 0.0 and abs(command.dx) == 0.0 and abs(command.dy) == 0.0:
                 return int(self.config.pen_down_speed)
-            return int(
-                command.speed
-                if command.speed is not None
-                else self.config.drawing_speed
-            )
+            return int(command.speed if command.speed is not None else self.config.drawing_speed)
 
         if abs(command.dz) > 0.0 and abs(command.dx) == 0.0 and abs(command.dy) == 0.0:
             return int(self.config.pen_up_speed)
-        return int(
-            command.speed if command.speed is not None else self.config.travel_speed
-        )
+        return int(command.speed if command.speed is not None else self.config.travel_speed)
 
-    def split_dpose_if_needed(
-        self, dpose: Sequence[float], pen_down: bool
-    ) -> List[List[float]]:
+    def split_dpose_if_needed(self, dpose: Sequence[float], pen_down: bool) -> List[List[float]]:
         """非筆記 XY 移動を max_travel_step_mm 以下へ分割する。"""
         dx = float(dpose[0])
         dy = float(dpose[1])
