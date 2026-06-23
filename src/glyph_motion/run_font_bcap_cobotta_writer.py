@@ -108,11 +108,7 @@ class BcapFontCobottaWriter:
             return
 
         current = self._bcap.get_current_position()
-        if (
-            current is False
-            or not isinstance(current, (list, tuple))
-            or len(current) < 3
-        ):
+        if current is False or not isinstance(current, (list, tuple)) or len(current) < 3:
             raise RuntimeError("CobottaBcap.get_current_position() failed")
 
         target_z = ROBOT_SURFACE_Z_MM + PEN_LIFT_HEIGHT_MM
@@ -129,9 +125,7 @@ class BcapFontCobottaWriter:
         logging.info("move_to_target_origin_up dpose=%s", dpose)
         ok = self._bcap.robo_dmove(dpose, coord_mode="P")
         if ok is False:
-            raise RuntimeError(
-                "CobottaBcap.robo_dmove() failed in move_to_target_origin_up"
-            )
+            raise RuntimeError("CobottaBcap.robo_dmove() failed in move_to_target_origin_up")
 
         if MOVE_INTERVAL_SEC > 0.0:
             time.sleep(MOVE_INTERVAL_SEC)
