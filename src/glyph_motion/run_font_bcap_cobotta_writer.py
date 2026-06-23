@@ -32,7 +32,8 @@ COBOTTA_PORT = 5007
 # KanjiVG の SVG ディレクトリ。
 # None の場合は下の KANJIVG_DIRECTORY_CANDIDATES から実在するものを自動選択する。
 # Windows では Path.home() / "Desktop" / "data" / "kanjiVG" が通常候補になる。
-KANJIVG_DIRECTORY = None
+# KANJIVG_DIRECTORY = None
+KANJIVG_DIRECTORY = Path(r"C:\Users\nakada\zaiene-dev\glyph_motion\data\kanjiVG")
 
 KANJIVG_DIRECTORY_CANDIDATES = [
     Path.home() / "Desktop" / "data" / "kanjiVG",
@@ -158,7 +159,9 @@ def resolve_kanjivg_directory() -> Path:
     if KANJIVG_DIRECTORY is not None:
         directory = Path(KANJIVG_DIRECTORY).expanduser()
         if directory.exists() is False:
-            raise FileNotFoundError("KANJIVG_DIRECTORY が存在しない: {}".format(directory))
+            raise FileNotFoundError(
+                "KANJIVG_DIRECTORY が存在しない: {}".format(directory)
+            )
         return directory
 
     checked = []
