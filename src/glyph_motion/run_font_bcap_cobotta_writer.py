@@ -23,17 +23,19 @@ from glyph_motion.font_robot_motion_builder import FontRobotMotionCommand
 
 # 実機を動かす場合は True にする。
 # False の場合も、b-CAP へ接続せず、生成された dpose を表示する。
-EXECUTE_ROBOT = False
+# EXECUTE_ROBOT = False
+EXECUTE_ROBOT = True
 
 # COBOTTA b-CAP 接続先。
-COBOTTA_HOST = "10.170.10.37"
+# COBOTTA_HOST = "10.170.10.37"  # cobotta4
+COBOTTA_HOST = "10.170.10.53"  # cobotta4
 COBOTTA_PORT = 5007
 
 # KanjiVG の SVG ディレクトリ。
 # None の場合は下の KANJIVG_DIRECTORY_CANDIDATES から実在するものを自動選択する。
 # Windows では Path.home() / "Desktop" / "data" / "kanjiVG" が通常候補になる。
 # KANJIVG_DIRECTORY = None
-KANJIVG_DIRECTORY = Path(r"C:\Users\nakada\zaiene-dev\glyph_motion\data\kanjiVG")
+KANJIVG_DIRECTORY = Path(r"C:\Users\nakada\Desktop\kanji")
 
 KANJIVG_DIRECTORY_CANDIDATES = [
     Path.home() / "Desktop" / "data" / "kanjiVG",
@@ -49,7 +51,8 @@ TEXT = "島根"
 LAYOUT = "horizontal"  # "horizontal" or "vertical"
 
 # 文字サイズ。単位はロボット座標へ渡す mm 相当として扱う。
-CHARACTER_HEIGHT_MM = 40.0
+# CHARACTER_HEIGHT_MM = 40.0
+CHARACTER_HEIGHT_MM = 80.0
 CHARACTER_SPACING_MM = 5.0
 PEN_LIFT_HEIGHT_MM = 5.0
 CURVE_DIVISION = 20

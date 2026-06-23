@@ -15,7 +15,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
 "x_logger",
-"packmol_util" ,
+# "packmol_util" ,
 #
 "dataclasses",
 "coloredlogs",
