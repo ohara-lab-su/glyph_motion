@@ -2,6 +2,41 @@
 
 このファイルでは、本プロジェクトの主要な変更履歴を記録する。
 
+## [0.2.1] - pyi 生成 make.py と DeviceProxy 型定義生成を追加
+
+### 追加
+
+#### server_fastapi/make.py
+
+ese774_frame の pyi 生成フレームを用いて、server_fastapi 配下の型定義ファイルを生成する `make.py` を追加した。
+
+生成対象は以下である。
+
+- `clients/async_cobotta_writer_client.pyi`
+- `clients/sync_cobotta_writer_client.pyi`
+- `clients/__init__.pyi`
+- `routers/font_bcap_cobotta_writer_router.pyi`
+- `__init__.pyi`
+
+#### DeviceProxy 用 pyi 生成
+
+DeviceProxy 登録に対応するため、`server_fastapi/__init__.pyi` の生成を追加した。
+
+これにより、DeviceProxy から利用される公開クラス、API spec、alias 情報について、実装側の `__init__.py` と型定義側の `__init__.pyi` が揃うようにした。
+
+### 変更
+
+#### pyi 生成処理
+
+client/router の pyi 生成を個別の手書き処理ではなく、ese774_frame 側の生成器を使う構成に整理した。
+
+既存の client/router 実装を直接変更せず、生成対象と補正条件を `make.py` に集約した。
+
+### 設計メモ
+
+`font_bcap_cobotta_writer.py` は ctrl 側の実制御クラスとして維持し、`server_fastapi` 側では透過 API、client、router、DeviceProxy 登録、および pyi 生成のみを扱う構成とした。
+
+これにより、制御本体と ese774_frame 依存のサーバー層を分離したまま、型補完に必要な pyi を生成できる。
 
 ## [0.2.0] - KanjiVG ストロークを使って、cobotta で実際に文字を書く (ese774 versiono)
 
