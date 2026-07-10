@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 """
 K.NAKADA, kengo.nakada@gmail.com
+-----------------
+font_bcap_cobotta_writer.py
+COBOTTA b-CAP を用いて筆順付き文字を書く制御クラスを定義する。
+    ↓
+font_robot_writer.py
+文字列をロボット筆記用の相対移動命令へ変換する簡易 I/F を定義する。
+    ↓
+font_robot_motion_builder.py
+筆順付き stroke データを、ロボット向けの相対移動命令へ変換する。
+    ↓
+font_motion_builder.py
+中心線データまたは筆順付き stroke データをXY相対移動命令へ変換する。(非ロボット依存)
+-----------------
 
 中心線データまたは筆順付き stroke データをXY相対移動命令へ変換する。
 
@@ -18,8 +31,7 @@ FontStrokeGlyph の各 FontStrokePath は、一回ペンを下ろして書く単
 抽象的なXY相対移動命令である。
 """
 
-from typing import List
-from typing import Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from glyph_motion.lib.font_centerline_cleaner import FontCenterlineCleaner
 from glyph_motion.lib.font_geometry import FontCenterlineGlyph
