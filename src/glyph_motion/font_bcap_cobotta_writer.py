@@ -24,7 +24,7 @@ from glyph_motion.lib.font_geometry import FontPoint
 from glyph_motion.lib.font_geometry import FontStrokePath
 
 
-class CobottaFontLineWriterConfig:
+class FontBcapCobottaWriterConfig:
     """一行書字に必要な最小設定を保持する。"""
 
     def __init__(
@@ -76,7 +76,7 @@ class CobottaFontLineWriterConfig:
         self.decel = int(decel)
 
 
-class CobottaFontLineWriter:
+class FontBcapCobottaWriter:
     """固定作業空間へ一行の文字列を書く。"""
 
     def __init__(
@@ -436,7 +436,7 @@ class CobottaFontLineWriter:
 
 def main():
     """底面開始で単体テストを行う。"""
-    config = CobottaFontLineWriterConfig(
+    config = FontBcapCobottaWriterConfig(
         kanjivg_directory=Path(
             # r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG"
             r"C:\Users\nakada\Desktop\kanji",
@@ -460,7 +460,7 @@ def main():
         mirror_horizontal=True,
     )
 
-    writer = CobottaFontLineWriter(config=config)
+    writer = FontBcapCobottaWriter(config=config)
 
     try:
         if not writer.connect():

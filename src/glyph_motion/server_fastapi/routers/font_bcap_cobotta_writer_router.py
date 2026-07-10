@@ -1,4 +1,4 @@
-"""CobottaBcapFontWriter と api_spec を結ぶ ese774_frame Router。"""
+"""FontBcapCobottaWriter と API spec を結ぶ ese774_frame Router。"""
 
 from typing import Any, Optional
 
@@ -6,7 +6,7 @@ from ese774_frame.routers.device_router import DeviceRouter
 
 
 class FontBcapCobottaWriterRouter(DeviceRouter):
-    """DeviceRouter の動的ディスパッチをそのまま使用する薄い Router である。"""
+    """DeviceRouter の動的ディスパッチを使用する薄い Router。"""
 
     def __init__(
         self,

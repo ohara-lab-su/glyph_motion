@@ -4,18 +4,18 @@
 from pathlib import Path
 import logging
 
-from glyph_motion.font_bcap_cobotta_writer import CobottaBcapFontWriterConfig
+from glyph_motion.font_bcap_cobotta_writer import FontBcapCobottaWriterConfig
 from glyph_motion.server_fastapi.server import run
 
 
-#SERVER_HOST = "0.0.0.0"
+# SERVER_HOST = "0.0.0.0"
 SERVER_HOST = "10.170.10.38"
 SERVER_PORT = 8000
 LOG_LEVEL = "INFO"
 
-WRITER_CONFIG = CobottaBcapFontWriterConfig(
-    #host="10.170.10.53", # cobotta3
-    host="10.170.10.36", # cobotta2
+WRITER_CONFIG = FontBcapCobottaWriterConfig(
+    # host="10.170.10.53", # cobotta3
+    host="10.170.10.36",  # cobotta2
     port=5007,
     kanjivg_directory=Path(r"C:\Users\nakada\Desktop\kanji"),
     layout="horizontal",

@@ -1,6 +1,5 @@
-"""COBOTTA 文字書字 ese774_frame 同期クライアント。"""
+"""CobottaFontLineWriter ese774_frame 同期クライアント。"""
 
-import logging
 from typing import Any, Optional
 
 from ese774_frame.clients.sync_device_client import SyncDeviceClient
@@ -9,7 +8,7 @@ from glyph_motion.server_fastapi.spec_writer import cobotta_writer_api_spec
 
 
 class SyncCobottaWriterClient(SyncDeviceClient):
-    """CobottaBcapFontWriter を ese774_frame 経由で呼ぶ同期クライアントである。"""
+    """CobottaFontLineWriter を ese774_frame 経由で呼ぶ同期クライアント。"""
 
     def __init__(
         self,
@@ -20,10 +19,6 @@ class SyncCobottaWriterClient(SyncDeviceClient):
         log_level: str = "INFO",
         timeout_sec: float = 120.0,
     ) -> None:
-        if logger is None:
-            logging.basicConfig(level=log_level.upper())
-            logger = logging.getLogger(__name__)
-
         if config is not None:
             server_ip = getattr(config, "SERVER_IP", server_ip)
             server_port = getattr(config, "SERVER_PORT", server_port)
@@ -48,4 +43,4 @@ class SyncCobottaWriterClient(SyncDeviceClient):
 
     def close_client(self) -> None:
         """HTTP client を同期的に閉じる。"""
-        self._sync_wrap(self.close())
+        self._sync_wrap(super().close())
