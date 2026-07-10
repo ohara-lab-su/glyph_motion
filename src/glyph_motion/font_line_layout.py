@@ -47,7 +47,9 @@ class FontLineLayout:
         character_height: float,
         curve_division: int = 16,
         line_direction: str = "left_to_right",
+        writing_direction: str = "horizontal",
         mirror_horizontal: bool = False,
+        mirror_vertical: bool = False,
     ) -> None:
         if workspace_width <= 0.0:
             raise ValueError("workspace_width は正の値である必要がある。")
@@ -74,7 +76,11 @@ class FontLineLayout:
             )
 
         self.line_direction = line_direction
+        if writing_direction not in ("horizontal","vertical"):
+            raise ValueError("writing_direction must be horizontal or vertical")
+        self.writing_direction = writing_direction
         self.mirror_horizontal = bool(mirror_horizontal)
+        self.mirror_vertical = bool(mirror_vertical)
 
         self._loader = FontKanjiVGStrokeLoader(
             kanjivg_directory=kanjivg_directory,
@@ -108,8 +114,12 @@ class FontLineLayout:
             else:
                 cell_index = self.capacity - 1 - character_index
 
-            cell_origin_x = float(cell_index) * self.cell_width
-            cell_origin_y = 0.0
+            if self.writing_direction == "horizontal":
+                cell_origin_x = float(cell_index) * self.cell_width
+                cell_origin_y = 0.0
+            else:
+                cell_origin_x = 0.0
+                cell_origin_y = float(cell_index) * self.cell_height
 
             if character == " ":
                 positioned_characters.append(
