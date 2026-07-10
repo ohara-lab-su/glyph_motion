@@ -32,22 +32,35 @@ class FontBcapCobottaWriterConfig:
         kanjivg_directory,
         host="10.170.10.53",
         port=5007,
-        workspace_width=160.0,
-        workspace_height=40.0,
-        cell_width=40.0,
-        cell_height=40.0,
-        character_height=36.0,
+        # 書字ワークスペースの大きさ
+        workspace_width=200.0,
+        workspace_height=10.0,
+        # 一文字の箱の大きさ
+        cell_width=8.0,
+        cell_height=8.0,
+        # 箱の中の文字の高さ
+        character_height=7.0,
+        # ---- ベジェ曲線の分割数
         curve_division=16,
+        # ペン上げ高さ [mm]
         pen_lift_mm=1.0,
+        # ロボット座標系の方向
         robot_x_sign=1.0,
         robot_y_sign=1.0,
         robot_swap_xy=False,
+        # 横書き・縦書き
         line_direction="left_to_right",
+        # 横書き・縦書き
         writing_direction="horizontal",
+        # 文字の左右反転
         mirror_horizontal=False,
+        # 文字の上下反転
         mirror_vertical=False,
-        drawing_speed=20,
+        # 書字速度
+        drawing_speed=35,
+        # 空走速度
         travel_speed=40,
+        # ペン上下速度
         pen_speed=20,
         accel=100,
         decel=100,
@@ -443,21 +456,40 @@ def main():
         ),
         host="10.170.10.36",  # cobotta2
         # host="10.170.10.53",  # cobotta3
-        # ワークスペースの大きさ
+        port=5007,
+        # 書字ワークスペースの大きさ
         workspace_width=200.0,
         workspace_height=10.0,
         # 一文字の箱の大きさ
-        # cell_width=40.0,
-        # cell_height=40.0,
         cell_width=8.0,
         cell_height=8.0,
         # 箱の中の文字の高さ
         character_height=7.0,
-        pen_lift_mm=1.0,
+        # ---- ベジェ曲線の分割数
         curve_division=16,
+        # ペン上げ高さ [mm]
+        pen_lift_mm=1.0,
+        # ロボット座標系の方向
+        robot_x_sign=1.0,
+        robot_y_sign=1.0,
+        # ロボット座標系をxy入れ替え
         robot_swap_xy=True,
+        # 横書き・縦書き
         line_direction="left_to_right",
-        mirror_horizontal=True,
+        # 横書き・縦書き
+        writing_direction="horizontal",
+        # 文字の左右反転
+        mirror_horizontal=False,
+        # 文字の上下反転
+        mirror_vertical=False,
+        # 書字速度
+        drawing_speed=35,
+        # 空走速度
+        travel_speed=40,
+        # ペン上下速度
+        pen_speed=20,
+        accel=100,
+        decel=100,
     )
 
     writer = FontBcapCobottaWriter(config=config)
@@ -469,7 +501,8 @@ def main():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
 
         ret = writer.write(
-            text="島根大学 尾原研究室",
+            # text="島根大学 尾原研究室",
+            text="島根大学",
             start_height_mm=1.0,
             return_to_start=True,
         )
