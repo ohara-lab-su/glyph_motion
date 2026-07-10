@@ -48,7 +48,6 @@ class CobottaFontLineWriterConfig:
         accel=100,
         decel=100,
     ):
-        # type: (Path, str, int, float, float, float, float, float, int, float, float, float, bool, int, int, int, int, int) -> None
         self.kanjivg_directory = kanjivg_directory
         self.host = host
         self.port = int(port)
@@ -78,7 +77,6 @@ class CobottaFontLineWriter:
         bcap=None,
         logger=None,
     ):
-        # type: (CobottaFontLineWriterConfig, Optional[CobottaBcap], Optional[Any]) -> None
         if logger is None:
             logging.basicConfig(level=logging.INFO)
             logger = logging.getLogger(__name__)
@@ -101,7 +99,6 @@ class CobottaFontLineWriter:
         )
 
     def connect(self):
-        # type: () -> bool
         if self._connected:
             return True
 
@@ -119,7 +116,6 @@ class CobottaFontLineWriter:
         return True
 
     def prepare(self):
-        # type: () -> bool
         if not self._connected:
             if not self.connect():
                 return False
@@ -139,7 +135,6 @@ class CobottaFontLineWriter:
         return True
 
     def close(self):
-        # type: () -> None
         if self._bcap is None:
             return
 
@@ -155,12 +150,18 @@ class CobottaFontLineWriter:
 
     def write(
         self,
-        text,
-        start_pen_up=False,
-        return_to_start=True,
-    ):
-        # type: (str, bool, bool) -> bool
-        """一行の文字列を書く。デフォルトは底面開始である。"""
+        text: str,
+        start_height_mm: float = 0.0,
+        return_to_start: bool = True,
+    ) -> bool:
+        """一行の文字列を書く。
+
+        Args:
+            text: 書く文字列。
+            start_height_mm: write() 開始位置が底面より高い量 [mm]。
+                0.0 の場合は開始位置を底面とみなす。
+            return_to_start: 終了後に write() 開始位置へ戻るか。
+        """
         if not self._prepared:
             if not self.prepare():
                 return False
@@ -173,26 +174,29 @@ class CobottaFontLineWriter:
         start_pose = self._read_pose()
         workspace_origin = list(start_pose)
 
-        if start_pen_up:
-            surface_z = float(start_pose[2]) - self.config.pen_lift_mm
-        else:
-            surface_z = float(start_pose[2])
+        start_height_mm = float(start_height_mm)
+        if start_height_mm < 0.0:
+            raise ValueError("start_height_mm は 0.0 以上で指定してください。")
 
+        surface_z = float(start_pose[2]) - start_height_mm
         pen_up_z = surface_z + self.config.pen_lift_mm
 
         first_point = strokes[0].points[0]
 
-        if not start_pen_up:
+        if start_height_mm == 0.0:
             if not self._move_z(
                 pose=start_pose,
                 target_z=pen_up_z,
             ):
                 return False
+            first_travel_z = pen_up_z
+        else:
+            first_travel_z = float(start_pose[2])
 
         if not self._travel_to_point(
             workspace_origin=workspace_origin,
             point=first_point,
-            target_z=pen_up_z,
+            target_z=first_travel_z,
         ):
             return False
 
@@ -259,20 +263,18 @@ class CobottaFontLineWriter:
             ):
                 return False
 
-            if not start_pen_up:
-                if not self._move_absolute(
-                    target=start_pose,
-                    speed=self.config.pen_speed,
-                    is_async=False,
-                ):
-                    return False
+            if not self._move_absolute(
+                target=start_pose,
+                speed=self.config.pen_speed,
+                is_async=False,
+            ):
+                return False
 
         return True
 
     @staticmethod
     def _collect_strokes(characters):
-        # type: (List[PositionedCharacter]) -> List[FontStrokePath]
-        strokes = []  # type: List[FontStrokePath]
+        strokes = []
         for character in characters:
             for stroke in character.strokes:
                 if len(stroke.points) > 0:
@@ -280,7 +282,6 @@ class CobottaFontLineWriter:
         return strokes
 
     def _read_pose(self):
-        # type: () -> List[float]
         pose = self._bcap.get_curpos()
         if pose is False or pose is None:
             raise RuntimeError("現在P座標を取得できない。")
@@ -295,7 +296,6 @@ class CobottaFontLineWriter:
         point,
         target_z,
     ):
-        # type: (Sequence[float], FontPoint, float) -> List[float]
         if self.config.robot_swap_xy:
             point_x = point.y
             point_y = point.x
@@ -314,7 +314,6 @@ class CobottaFontLineWriter:
 
     @staticmethod
     def _pose_with_xyz(base_pose, x, y, z):
-        # type: (Sequence[float], float, float, float) -> List[float]
         target = list(base_pose)[:6]
         target[0] = float(x)
         target[1] = float(y)
@@ -322,7 +321,6 @@ class CobottaFontLineWriter:
         return target
 
     def _move_z(self, pose, target_z):
-        # type: (Sequence[float], float) -> bool
         target = self._pose_with_xyz(
             base_pose=pose,
             x=float(pose[0]),
@@ -341,7 +339,6 @@ class CobottaFontLineWriter:
         point,
         target_z,
     ):
-        # type: (Sequence[float], FontPoint, float) -> bool
         target = self._point_to_pose(
             workspace_origin=workspace_origin,
             point=point,
@@ -359,7 +356,6 @@ class CobottaFontLineWriter:
         point,
         target_z,
     ):
-        # type: (Sequence[float], FontPoint, float) -> bool
         target = self._point_to_pose(
             workspace_origin=workspace_origin,
             point=point,
@@ -377,7 +373,6 @@ class CobottaFontLineWriter:
         stroke,
         surface_z,
     ):
-        # type: (Sequence[float], FontStrokePath, float) -> bool
         if len(stroke.points) <= 1:
             return True
 
@@ -407,7 +402,6 @@ class CobottaFontLineWriter:
         speed,
         is_async,
     ):
-        # type: (Sequence[float], int, bool) -> bool
         if not self._bcap.set_speed(speed):
             return False
 
@@ -429,7 +423,7 @@ def main():
         host="10.170.10.36",  # cobotta2
         # host="10.170.10.53",  # cobotta3
         # ワークスペースの大きさ
-        workspace_width=10.0,
+        workspace_width=200.0,
         workspace_height=10.0,
         # 一文字の箱の大きさ
         # cell_width=40.0,
@@ -453,7 +447,7 @@ def main():
 
         ret = writer.write(
             text="島根大学 尾原研究室",
-            start_pen_up=False,
+            start_height_mm=1.0,
             return_to_start=True,
         )
     finally:
