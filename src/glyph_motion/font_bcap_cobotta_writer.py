@@ -365,10 +365,22 @@ class CobottaBcapFontWriter:
         Returns:
             実行結果を表す dict である。
         """
-        commands = self.build_commands(
-            text=text,
-            layout=layout,
-        )
+        try:
+            commands = self.build_commands(
+                text=text,
+                layout=layout,
+            )
+        except FileNotFoundError as exc:
+            message = (
+                "文字書字に必要な KanjiVG SVG が見つかりません。"
+                " text={!r}, kanjivg_directory={!s}, detail={}"
+            ).format(
+                text,
+                self.config.kanjivg_directory,
+                exc,
+            )
+            self._logger.error(message)
+            raise FileNotFoundError(message) from exc
         if execute:
             if self._bcap is None:
                 self.connect()
