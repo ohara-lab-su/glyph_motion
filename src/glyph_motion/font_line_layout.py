@@ -87,7 +87,10 @@ class FontLineLayout:
     def capacity(self) -> int:
         return int(self.workspace_width // self.cell_width)
 
-    def build(self, text: str) -> List[PositionedCharacter]:
+    def build(
+        self,
+        text: str,
+    ) -> List[PositionedCharacter]:
         """一行の文字列を固定文字空間へ配置する。"""
         if len(text) > self.capacity:
             raise ValueError(
@@ -144,11 +147,7 @@ class FontLineLayout:
 
                     if self.mirror_horizontal:
                         local_x = positioned_x - cell_origin_x
-                        positioned_x = (
-                            cell_origin_x
-                            + self.cell_width
-                            - local_x
-                        )
+                        positioned_x = cell_origin_x + self.cell_width - local_x
 
                     points.append(
                         FontPoint(

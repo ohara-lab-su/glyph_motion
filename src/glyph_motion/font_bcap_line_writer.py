@@ -319,14 +319,23 @@ class CobottaFontLineWriter:
         )
 
     @staticmethod
-    def _pose_with_xyz(base_pose, x, y, z):
+    def _pose_with_xyz(
+        base_pose,
+        x,
+        y,
+        z,
+    ):
         target = list(base_pose)[:6]
         target[0] = float(x)
         target[1] = float(y)
         target[2] = float(z)
         return target
 
-    def _move_z(self, pose, target_z):
+    def _move_z(
+        self,
+        pose,
+        target_z,
+    ):
         target = self._pose_with_xyz(
             base_pose=pose,
             x=float(pose[0]),
