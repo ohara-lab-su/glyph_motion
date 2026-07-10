@@ -451,7 +451,7 @@ def main():
         if not writer.prepare():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
         if not writer.write(
-            text="島根",
+            text="島根大学 尾原研究室",
             start_pen_up=False,
             return_to_start=True,
         ):
