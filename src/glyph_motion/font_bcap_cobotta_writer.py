@@ -727,6 +727,7 @@ def main() -> None:
     kanjivg_directory = Path(r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG")
 
     config = CobottaBcapFontWriterConfig(
+        host="10.170.10.36",
         kanjivg_directory=kanjivg_directory,
         pen_lift_height_mm=1.0,
         curve_division=20,
