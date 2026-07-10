@@ -103,11 +103,12 @@ class CobottaBcapFontWriter:
         logger: Optional[logging.Logger] = None,
     ) -> None:
         self.config = config
+        self._logger = logger or logging.getLogger(__name__)
+        self._validate_kanjivg_directory()
         self._bcap = bcap
         self._owns_bcap = bcap is None
         self._prepared = False
         self._last_speed: Optional[int] = None
-        self._logger = logger or logging.getLogger(__name__)
 
     @property
     def bcap(self) -> Optional[CobottaBcap]:
@@ -376,22 +377,10 @@ class CobottaBcapFontWriter:
         Returns:
             実行結果を表す dict である。
         """
-        try:
-            commands = self.build_commands(
-                text=text,
-                layout=layout,
-            )
-        except FileNotFoundError as exc:
-            message = (
-                "文字書字に必要な KanjiVG SVG が見つかりません。"
-                " text={!r}, kanjivg_directory={!s}, detail={}"
-            ).format(
-                text,
-                self.config.kanjivg_directory,
-                exc,
-            )
-            self._logger.error(message)
-            raise FileNotFoundError(message) from exc
+        commands = self.build_commands(
+            text=text,
+            layout=layout,
+        )
         if execute:
             if self._bcap is None:
                 self.connect()
@@ -633,6 +622,39 @@ class CobottaBcapFontWriter:
         values = dict(self.config.__dict__)
         values["kanjivg_directory"] = str(values["kanjivg_directory"])
         return values
+
+    def _validate_kanjivg_directory(self) -> None:
+        """KanjiVG SVG ディレクトリを起動時に検証する。"""
+        directory = Path(self.config.kanjivg_directory)
+
+        if not directory.exists():
+            message = (
+                "KanjiVG ディレクトリが見つかりません。"
+                " サーバー設定の kanjivg_directory を確認してください: {}"
+            ).format(directory)
+            self._logger.error(message)
+            raise FileNotFoundError(message)
+
+        if not directory.is_dir():
+            message = (
+                "kanjivg_directory がディレクトリではありません: {}"
+            ).format(directory)
+            self._logger.error(message)
+            raise NotADirectoryError(message)
+
+        svg_found = False
+        for svg_file in directory.glob("*.svg"):
+            if svg_file.is_file():
+                svg_found = True
+                break
+
+        if not svg_found:
+            message = (
+                "KanjiVG SVG ファイルが見つかりません。"
+                " kanjivg_directory 直下に *.svg が配置されているか確認してください: {}"
+            ).format(directory)
+            self._logger.error(message)
+            raise FileNotFoundError(message)
 
     def _apply_accel_decel(self) -> None:
         bcap = self._require_bcap()
