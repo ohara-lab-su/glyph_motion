@@ -26,6 +26,7 @@ def main() -> None:
     # kanjivg_directory = Path(__file__).resolve().parent / "data" / "kanjiVG"
     kanjivg_directory = Path("/Users/nakada/Desktop/data/kanjiVG")
 
+    # 漢字用のストローク作成
     loader = FontKanjiVGStrokeLoader(
         kanjivg_directory=kanjivg_directory,
         height=40.0,

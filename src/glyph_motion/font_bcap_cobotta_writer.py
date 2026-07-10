@@ -661,9 +661,9 @@ class CobottaBcapFontWriter:
             raise FileNotFoundError(message)
 
         if not directory.is_dir():
-            message = (
-                "kanjivg_directory がディレクトリではありません: {}"
-            ).format(directory)
+            message = ("kanjivg_directory がディレクトリではありません: {}").format(
+                directory
+            )
             self._logger.error(message)
             raise NotADirectoryError(message)
 
@@ -719,3 +719,28 @@ __all__ = [
     "CobottaBcapFontWriter",
     "CobottaBcapFontWriterConfig",
 ]
+
+
+def main() -> None:
+    """COBOTTA で KanjiVG のテスト書字を行う。"""
+
+    config = CobottaBcapFontWriterConfig()
+
+    writer = CobottaBcapFontWriter(
+        config=config,
+    )
+
+    try:
+        writer.connect()
+        writer.prepare()
+
+        writer.write_text(
+            text="一",
+        )
+
+    finally:
+        writer.close()
+
+
+if __name__ == "__main__":
+    main()
