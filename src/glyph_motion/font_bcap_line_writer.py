@@ -42,6 +42,8 @@ class CobottaFontLineWriterConfig:
         robot_x_sign=1.0,
         robot_y_sign=1.0,
         robot_swap_xy=False,
+        line_direction="left_to_right",
+        mirror_horizontal=False,
         drawing_speed=20,
         travel_speed=40,
         pen_speed=20,
@@ -61,6 +63,8 @@ class CobottaFontLineWriterConfig:
         self.robot_x_sign = float(robot_x_sign)
         self.robot_y_sign = float(robot_y_sign)
         self.robot_swap_xy = bool(robot_swap_xy)
+        self.line_direction = str(line_direction)
+        self.mirror_horizontal = bool(mirror_horizontal)
         self.drawing_speed = int(drawing_speed)
         self.travel_speed = int(travel_speed)
         self.pen_speed = int(pen_speed)
@@ -96,6 +100,8 @@ class CobottaFontLineWriter:
             cell_height=config.cell_height,
             character_height=config.character_height,
             curve_division=config.curve_division,
+            line_direction=config.line_direction,
+            mirror_horizontal=config.mirror_horizontal,
         )
 
     def connect(self):
@@ -435,6 +441,8 @@ def main():
         pen_lift_mm=1.0,
         curve_division=16,
         robot_swap_xy=True,
+        line_direction="left_to_right",
+        mirror_horizontal=True,
     )
 
     writer = CobottaFontLineWriter(config=config)

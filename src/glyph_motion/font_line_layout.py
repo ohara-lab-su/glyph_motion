@@ -21,13 +21,12 @@ class PositionedCharacter:
 
     def __init__(
         self,
-        character,
-        index,
-        cell_origin_x,
-        cell_origin_y,
-        strokes,
-    ):
-        # type: (str, int, float, float, List[FontStrokePath]) -> None
+        character: str,
+        index: int,
+        cell_origin_x: float,
+        cell_origin_y: float,
+        strokes: List[FontStrokePath],
+    ) -> None:
         self.character = character
         self.index = index
         self.cell_origin_x = float(cell_origin_x)
@@ -40,15 +39,16 @@ class FontLineLayout:
 
     def __init__(
         self,
-        kanjivg_directory,
-        workspace_width,
-        workspace_height,
-        cell_width,
-        cell_height,
-        character_height,
-        curve_division=16,
-    ):
-        # type: (Path, float, float, float, float, float, int) -> None
+        kanjivg_directory: Path,
+        workspace_width: float,
+        workspace_height: float,
+        cell_width: float,
+        cell_height: float,
+        character_height: float,
+        curve_division: int = 16,
+        line_direction: str = "left_to_right",
+        mirror_horizontal: bool = False,
+    ) -> None:
         if workspace_width <= 0.0:
             raise ValueError("workspace_width は正の値である必要がある。")
         if workspace_height <= 0.0:
@@ -68,6 +68,14 @@ class FontLineLayout:
         self.cell_height = float(cell_height)
         self.character_height = float(character_height)
 
+        if line_direction not in ("left_to_right", "right_to_left"):
+            raise ValueError(
+                "line_direction は left_to_right または right_to_left を指定してください。"
+            )
+
+        self.line_direction = line_direction
+        self.mirror_horizontal = bool(mirror_horizontal)
+
         self._loader = FontKanjiVGStrokeLoader(
             kanjivg_directory=kanjivg_directory,
             height=self.character_height,
@@ -76,12 +84,10 @@ class FontLineLayout:
         )
 
     @property
-    def capacity(self):
-        # type: () -> int
+    def capacity(self) -> int:
         return int(self.workspace_width // self.cell_width)
 
-    def build(self, text):
-        # type: (str) -> List[PositionedCharacter]
+    def build(self, text: str) -> List[PositionedCharacter]:
         """一行の文字列を固定文字空間へ配置する。"""
         if len(text) > self.capacity:
             raise ValueError(
@@ -91,10 +97,15 @@ class FontLineLayout:
                 )
             )
 
-        positioned_characters = []  # type: List[PositionedCharacter]
+        positioned_characters = []
 
         for character_index, character in enumerate(text):
-            cell_origin_x = float(character_index) * self.cell_width
+            if self.line_direction == "left_to_right":
+                cell_index = character_index
+            else:
+                cell_index = self.capacity - 1 - character_index
+
+            cell_origin_x = float(cell_index) * self.cell_width
             cell_origin_y = 0.0
 
             if character == " ":
@@ -125,13 +136,23 @@ class FontLineLayout:
             x_offset = cell_origin_x + (self.cell_width - advance_width) / 2.0
             y_offset = cell_origin_y + (self.cell_height - self.character_height) / 2.0
 
-            strokes = []  # type: List[FontStrokePath]
+            strokes = []
             for stroke in character_glyph:
-                points = []  # type: List[FontPoint]
+                points = []
                 for point in stroke:
+                    positioned_x = point.x + x_offset
+
+                    if self.mirror_horizontal:
+                        local_x = positioned_x - cell_origin_x
+                        positioned_x = (
+                            cell_origin_x
+                            + self.cell_width
+                            - local_x
+                        )
+
                     points.append(
                         FontPoint(
-                            x=point.x + x_offset,
+                            x=positioned_x,
                             y=point.y + y_offset,
                         )
                     )
