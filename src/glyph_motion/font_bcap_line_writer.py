@@ -41,13 +41,14 @@ class CobottaFontLineWriterConfig:
         pen_lift_mm=1.0,
         robot_x_sign=1.0,
         robot_y_sign=1.0,
+        robot_swap_xy=False,
         drawing_speed=20,
         travel_speed=40,
         pen_speed=20,
         accel=100,
         decel=100,
     ):
-        # type: (Path, str, int, float, float, float, float, float, int, float, float, float, int, int, int, int, int) -> None
+        # type: (Path, str, int, float, float, float, float, float, int, float, float, float, bool, int, int, int, int, int) -> None
         self.kanjivg_directory = kanjivg_directory
         self.host = host
         self.port = int(port)
@@ -60,6 +61,7 @@ class CobottaFontLineWriterConfig:
         self.pen_lift_mm = float(pen_lift_mm)
         self.robot_x_sign = float(robot_x_sign)
         self.robot_y_sign = float(robot_y_sign)
+        self.robot_swap_xy = bool(robot_swap_xy)
         self.drawing_speed = int(drawing_speed)
         self.travel_speed = int(travel_speed)
         self.pen_speed = int(pen_speed)
@@ -294,8 +296,15 @@ class CobottaFontLineWriter:
         target_z,
     ):
         # type: (Sequence[float], FontPoint, float) -> List[float]
-        x = float(workspace_origin[0]) + point.x * self.config.robot_x_sign
-        y = float(workspace_origin[1]) + point.y * self.config.robot_y_sign
+        if self.config.robot_swap_xy:
+            point_x = point.y
+            point_y = point.x
+        else:
+            point_x = point.x
+            point_y = point.y
+
+        x = float(workspace_origin[0]) + point_x * self.config.robot_x_sign
+        y = float(workspace_origin[1]) + point_y * self.config.robot_y_sign
         return self._pose_with_xyz(
             base_pose=workspace_origin,
             x=x,
@@ -432,6 +441,7 @@ def main():
         character_height=7.0,
         pen_lift_mm=1.0,
         curve_division=16,
+        robot_swap_xy=True,
     )
 
     writer = CobottaFontLineWriter(config=config)
