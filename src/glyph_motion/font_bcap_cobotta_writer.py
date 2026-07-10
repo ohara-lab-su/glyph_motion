@@ -173,6 +173,161 @@ class FontBcapCobottaWriter:
             self._bcap.disconnect()
             self._connected = False
 
+    def set_params(
+        self,
+        kanjivg_directory: Optional[Path] = None,
+        workspace_width: Optional[float] = None,
+        workspace_height: Optional[float] = None,
+        cell_width: Optional[float] = None,
+        cell_height: Optional[float] = None,
+        character_height: Optional[float] = None,
+        curve_division: Optional[int] = None,
+        pen_lift_mm: Optional[float] = None,
+        robot_x_sign: Optional[float] = None,
+        robot_y_sign: Optional[float] = None,
+        robot_swap_xy: Optional[bool] = None,
+        line_direction: Optional[str] = None,
+        writing_direction: Optional[str] = None,
+        mirror_horizontal: Optional[bool] = None,
+        mirror_vertical: Optional[bool] = None,
+        drawing_speed: Optional[int] = None,
+        travel_speed: Optional[int] = None,
+        pen_speed: Optional[int] = None,
+        accel: Optional[int] = None,
+        decel: Optional[int] = None,
+    ) -> bool:
+        """通信設定以外の書字設定を更新する。
+
+        None が指定された項目は現在値を維持する。
+        レイアウト関連項目を変更した場合は FontLineLayout を再構築する。
+        """
+        layout_changed = False
+
+        new_kanjivg_directory = self.config.kanjivg_directory
+        new_workspace_width = self.config.workspace_width
+        new_workspace_height = self.config.workspace_height
+        new_cell_width = self.config.cell_width
+        new_cell_height = self.config.cell_height
+        new_character_height = self.config.character_height
+        new_curve_division = self.config.curve_division
+        new_line_direction = self.config.line_direction
+        new_writing_direction = self.config.writing_direction
+        new_mirror_horizontal = self.config.mirror_horizontal
+        new_mirror_vertical = self.config.mirror_vertical
+
+        if kanjivg_directory is not None:
+            new_kanjivg_directory = Path(kanjivg_directory)
+            layout_changed = True
+
+        if workspace_width is not None:
+            new_workspace_width = float(workspace_width)
+            layout_changed = True
+
+        if workspace_height is not None:
+            new_workspace_height = float(workspace_height)
+            layout_changed = True
+
+        if cell_width is not None:
+            new_cell_width = float(cell_width)
+            layout_changed = True
+
+        if cell_height is not None:
+            new_cell_height = float(cell_height)
+            layout_changed = True
+
+        if character_height is not None:
+            new_character_height = float(character_height)
+            layout_changed = True
+
+        if curve_division is not None:
+            new_curve_division = int(curve_division)
+            layout_changed = True
+
+        if line_direction is not None:
+            new_line_direction = str(line_direction)
+            layout_changed = True
+
+        if writing_direction is not None:
+            new_writing_direction = str(writing_direction)
+            layout_changed = True
+
+        if mirror_horizontal is not None:
+            new_mirror_horizontal = bool(mirror_horizontal)
+            layout_changed = True
+
+        if mirror_vertical is not None:
+            new_mirror_vertical = bool(mirror_vertical)
+            layout_changed = True
+
+        new_layout = None
+        if layout_changed:
+            new_layout = FontLineLayout(
+                kanjivg_directory=new_kanjivg_directory,
+                workspace_width=new_workspace_width,
+                workspace_height=new_workspace_height,
+                cell_width=new_cell_width,
+                cell_height=new_cell_height,
+                character_height=new_character_height,
+                curve_division=new_curve_division,
+                line_direction=new_line_direction,
+                writing_direction=new_writing_direction,
+                mirror_horizontal=new_mirror_horizontal,
+                mirror_vertical=new_mirror_vertical,
+            )
+
+        self.config.kanjivg_directory = new_kanjivg_directory
+        self.config.workspace_width = new_workspace_width
+        self.config.workspace_height = new_workspace_height
+        self.config.cell_width = new_cell_width
+        self.config.cell_height = new_cell_height
+        self.config.character_height = new_character_height
+        self.config.curve_division = new_curve_division
+        self.config.line_direction = new_line_direction
+        self.config.writing_direction = new_writing_direction
+        self.config.mirror_horizontal = new_mirror_horizontal
+        self.config.mirror_vertical = new_mirror_vertical
+
+        if pen_lift_mm is not None:
+            self.config.pen_lift_mm = float(pen_lift_mm)
+
+        if robot_x_sign is not None:
+            self.config.robot_x_sign = float(robot_x_sign)
+
+        if robot_y_sign is not None:
+            self.config.robot_y_sign = float(robot_y_sign)
+
+        if robot_swap_xy is not None:
+            self.config.robot_swap_xy = bool(robot_swap_xy)
+
+        if drawing_speed is not None:
+            self.config.drawing_speed = int(drawing_speed)
+
+        if travel_speed is not None:
+            self.config.travel_speed = int(travel_speed)
+
+        if pen_speed is not None:
+            self.config.pen_speed = int(pen_speed)
+
+        if accel is not None:
+            self.config.accel = int(accel)
+
+        if decel is not None:
+            self.config.decel = int(decel)
+
+        if new_layout is not None:
+            self._layout = new_layout
+
+        if self._prepared:
+            if accel is not None:
+                if not self._bcap.set_accel(self.config.accel):
+                    return False
+
+            if decel is not None:
+                if not self._bcap.set_decel(self.config.decel):
+                    return False
+
+        return True
+
     def write(
         self,
         text: str,
