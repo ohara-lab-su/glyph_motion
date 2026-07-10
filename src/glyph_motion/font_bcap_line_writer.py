@@ -420,8 +420,7 @@ class CobottaFontLineWriter:
 
 
 def main():
-    # type: () -> None
-    """底面開始で「一」を書く単体テストを行う。"""
+    """底面開始で単体テストを行う。"""
     config = CobottaFontLineWriterConfig(
         kanjivg_directory=Path(
             # r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG"
@@ -452,7 +451,7 @@ def main():
         if not writer.prepare():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
         if not writer.write(
-            text="一",
+            text="島根",
             start_pen_up=False,
             return_to_start=True,
         ):
