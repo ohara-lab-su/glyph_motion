@@ -450,12 +450,12 @@ def main():
             raise RuntimeError("COBOTTAへ接続できない。")
         if not writer.prepare():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
-        if not writer.write(
+
+        ret = writer.write(
             text="島根大学 尾原研究室",
             start_pen_up=False,
             return_to_start=True,
-        ):
-            raise RuntimeError("書字に失敗した。")
+        )
     finally:
         writer.close()
 
