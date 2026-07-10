@@ -420,11 +420,16 @@ def main():
         ),
         host="10.170.10.36",  # cobotta2
         # host="10.170.10.53",  # cobotta3
-        workspace_width=160.0,
-        workspace_height=40.0,
-        cell_width=40.0,
-        cell_height=40.0,
-        character_height=36.0,
+        # ワークスペースの大きさ
+        workspace_width=10.0,
+        workspace_height=10.0,
+        # 一文字の箱の大きさ
+        # cell_width=40.0,
+        # cell_height=40.0,
+        cell_width=8.0,
+        cell_height=8.0,
+        # 箱の中の文字の高さ
+        character_height=7.0,
         pen_lift_mm=1.0,
         curve_division=16,
     )
