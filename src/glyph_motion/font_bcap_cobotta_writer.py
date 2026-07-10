@@ -722,9 +722,15 @@ __all__ = [
 
 
 def main() -> None:
-    """COBOTTA で KanjiVG のテスト書字を行う。"""
+    """KanjiVG の「一」をCOBOTTAで書く単体テストを行う。"""
 
-    config = CobottaBcapFontWriterConfig()
+    kanjivg_directory = Path(r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG")
+
+    config = CobottaBcapFontWriterConfig(
+        kanjivg_directory=kanjivg_directory,
+        pen_lift_height_mm=1.0,
+        curve_division=20,
+    )
 
     writer = CobottaBcapFontWriter(
         config=config,
@@ -741,6 +747,9 @@ def main() -> None:
     finally:
         writer.close()
 
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
