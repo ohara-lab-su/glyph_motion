@@ -54,7 +54,7 @@ class CobottaBcapFontWriterConfig:
     layout: str = "horizontal"
     character_height_mm: float = 40.0
     character_spacing_mm: float = 5.0
-    pen_lift_height_mm: float = 5.0
+    pen_lift_height_mm: float = 1.0
     curve_division: int = 20
 
     drawing_speed: int = 20
@@ -343,6 +343,7 @@ class CobottaBcapFontWriter:
         self,
         text: str,
         layout: Optional[str] = None,
+        start_pen_up: bool = False,
     ) -> List[FontRobotMotionCommand]:
         """文字列から COBOTTA 実行前の抽象ロボット命令列を作る。"""
         writer = FontRobotWriter(
@@ -354,9 +355,14 @@ class CobottaBcapFontWriter:
             drawing_speed=float(self.config.drawing_speed),
             travel_speed=float(self.config.travel_speed),
         )
+        selected_layout = self.config.layout
+        if layout is not None:
+            selected_layout = layout
+
         commands = writer.write(
             text=text,
-            layout=layout or self.config.layout,
+            layout=selected_layout,
+            start_pen_up=start_pen_up,
         )
         return self.normalize_commands_for_origin_mode(commands)
 
@@ -366,6 +372,7 @@ class CobottaBcapFontWriter:
         layout: Optional[str] = None,
         *,
         execute: bool = True,
+        start_pen_up: bool = False,
     ) -> Dict[str, object]:
         """任意文字列を書く API である。
 
@@ -373,6 +380,8 @@ class CobottaBcapFontWriter:
             text: 書く文字列である。
             layout: 横書き/縦書きである。None の場合は設定値を使う。
             execute: False の場合はロボットへ投入せず、命令数だけ返す。
+            start_pen_up: True の場合、write 開始時と終了時をペン上げ状態とする。
+                False の場合、開始時と終了時を底面状態とする。デフォルトは False。
 
         Returns:
             実行結果を表す dict である。
@@ -380,6 +389,7 @@ class CobottaBcapFontWriter:
         commands = self.build_commands(
             text=text,
             layout=layout,
+            start_pen_up=start_pen_up,
         )
         if execute:
             if self._bcap is None:
@@ -388,9 +398,14 @@ class CobottaBcapFontWriter:
                 self.prepare()
             self.execute_commands(commands)
 
+        selected_layout = self.config.layout
+        if layout is not None:
+            selected_layout = layout
+
         return {
             "text": text,
-            "layout": layout or self.config.layout,
+            "layout": selected_layout,
+            "start_pen_up": start_pen_up,
             "command_count": len(commands),
             "execute": execute,
             "config": self.to_dict(),
@@ -401,16 +416,26 @@ class CobottaBcapFontWriter:
         text: str,
         layout: Optional[str] = None,
         max_commands: int = 20,
+        start_pen_up: bool = False,
     ) -> Dict[str, object]:
         """ロボットへ投入せず、生成される命令の概要を返す。"""
-        commands = self.build_commands(text=text, layout=layout)
+        commands = self.build_commands(
+            text=text,
+            layout=layout,
+            start_pen_up=start_pen_up,
+        )
         preview = [
             self.command_to_dict(command)
             for command in commands[: max(0, int(max_commands))]
         ]
+        selected_layout = self.config.layout
+        if layout is not None:
+            selected_layout = layout
+
         return {
             "text": text,
-            "layout": layout or self.config.layout,
+            "layout": selected_layout,
+            "start_pen_up": start_pen_up,
             "command_count": len(commands),
             "preview_count": len(preview),
             "commands": preview,

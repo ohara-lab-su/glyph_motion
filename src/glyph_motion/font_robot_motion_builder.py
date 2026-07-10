@@ -74,12 +74,17 @@ class FontRobotMotionBuilder:
     def build(
         self,
         stroke_glyph: FontStrokeGlyph,
+        start_pen_up: bool = False,
     ) -> List[FontRobotMotionCommand]:
         """筆順付き stroke から相対移動命令列を生成する。
 
         各 stroke は、一回ペンを下ろして書く単位である。
-        stroke が変わるたびに、Z 方向へペンを上げ、次の stroke 始点へ移動し、
-        Z 方向へペンを下げてから stroke 内をなぞる。
+        stroke の開始前にペンを pen_lift_height だけ上げ、stroke 始点へ移動し、
+        同じ量だけ下げてから stroke 内を同一 Z 面で一筆書きする。
+
+        start_pen_up が False の場合、write 開始時を底面とみなし、終了時も
+        底面へ戻す。True の場合、開始時をペン上げ位置とみなし、終了時も
+        ペン上げ位置のままとする。
         """
         commands: List[FontRobotMotionCommand] = []
 
@@ -87,7 +92,10 @@ class FontRobotMotionBuilder:
             x=0.0,
             y=0.0,
         )
-        current_z = 0.0
+        if start_pen_up:
+            current_z = self._pen_lift_height
+        else:
+            current_z = 0.0
 
         for stroke_index, stroke_path in enumerate(stroke_glyph):
             if len(stroke_path) == 0:
@@ -164,6 +172,19 @@ class FontRobotMotionBuilder:
             )
             current_z = self._pen_lift_height
 
+        if len(commands) > 0 and not start_pen_up and current_z != 0.0:
+            commands.append(
+                self._make_command(
+                    dx=0.0,
+                    dy=0.0,
+                    dz=-current_z,
+                    pen_down=True,
+                    stroke_index=commands[-1].stroke_index,
+                    point_index=commands[-1].point_index,
+                    speed=self._drawing_speed,
+                )
+            )
+
         return commands
 
     def _make_command(
@@ -208,7 +229,7 @@ def main() -> None:
     )
 
     builder = FontRobotMotionBuilder(
-        pen_lift_height=5.0,
+        pen_lift_height=1.0,
         drawing_speed=10.0,
         travel_speed=30.0,
     )

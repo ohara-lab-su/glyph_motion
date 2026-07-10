@@ -81,12 +81,15 @@ class FontRobotWriter:
         self,
         text: str,
         layout: str = "horizontal",
+        start_pen_up: bool = False,
     ) -> List[FontRobotMotionCommand]:
         """文字列をロボット筆記用相対移動命令へ変換する。
 
         Args:
             text: 書く文字列である。
             layout: "horizontal" または "vertical" を指定する。
+            start_pen_up: True の場合、write 開始時と終了時をペン上げ状態とする。
+                False の場合、開始時と終了時を底面状態とする。
 
         Returns:
             FontRobotMotionCommand のリストである。
@@ -98,6 +101,7 @@ class FontRobotWriter:
 
         return self._motion_builder.build(
             stroke_glyph=stroke_glyph,
+            start_pen_up=start_pen_up,
         )
 
     def build_stroke_glyph(
@@ -214,7 +218,7 @@ def main() -> None:
         kanjivg_directory=kanjivg_directory,
         height=40.0,
         character_spacing=5.0,
-        pen_lift_height=5.0,
+        pen_lift_height=1.0,
         curve_division=20,
         drawing_speed=10.0,
         travel_speed=30.0,
