@@ -724,7 +724,8 @@ __all__ = [
 def main() -> None:
     """KanjiVG の「一」をCOBOTTAで書く単体テストを行う。"""
 
-    kanjivg_directory = Path(r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG")
+    # kanjivg_directory = Path(r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG",)
+    kanjivg_directory = Path(r"C:\Users\nakada\Desktop\kanji",)
 
     config = CobottaBcapFontWriterConfig(
         host="10.170.10.36",  # cobotta
