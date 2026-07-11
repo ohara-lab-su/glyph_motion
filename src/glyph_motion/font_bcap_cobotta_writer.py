@@ -85,7 +85,7 @@ class FontBcapCobottaWriterConfig:
         robot_x_sign=1.0,
         robot_y_sign=1.0,
         robot_swap_xy=False,
-        # 横書き・縦書き
+        # 文字を配置する順序
         line_direction="left_to_right",
         # 横書き・縦書き
         writing_direction="horizontal",
@@ -470,6 +470,12 @@ class FontBcapCobottaWriter:
             RuntimeError: 現在 P 座標を取得できない場合、または取得値が 6 要素でない
                 場合。
         """
+        # ロボットへ接続・準備する前に、ロボット状態と無関係な入力値を検証する。
+        # 空文字列であっても、負の高さ指定は呼び出し条件の誤りとして扱う。
+        start_height_mm = float(start_height_mm)
+        if start_height_mm < 0.0:
+            raise ValueError("start_height_mm は 0.0 以上で指定してください。")
+
         if not self._prepared:
             if not self.prepare():
                 return False
@@ -483,10 +489,6 @@ class FontBcapCobottaWriter:
         # 呼び出し時の姿勢を、座標変換の原点と終了時の復帰先の両方に使用する。
         start_pose = self._read_pose()
         workspace_origin = list(start_pose)
-
-        start_height_mm = float(start_height_mm)
-        if start_height_mm < 0.0:
-            raise ValueError("start_height_mm は 0.0 以上で指定してください。")
 
         # 書字面とペン上げ位置は、開始姿勢を基準に一度だけ決定する。
         surface_z = float(start_pose[2]) - start_height_mm
@@ -873,7 +875,7 @@ def main():
         robot_y_sign=1.0,
         # ロボット座標系をxy入れ替え
         robot_swap_xy=True,
-        # 横書き・縦書き
+        # 文字を配置する順序
         line_direction="left_to_right",
         # 横書き・縦書き
         writing_direction="horizontal",
@@ -899,12 +901,13 @@ def main():
         if not writer.prepare():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
 
-        ret = writer.write(
+        if not writer.write(
             # text="島根大学 尾原研究室",
             text="島根大学",
             start_height_mm=1.0,
             return_to_start=True,
-        )
+        ):
+            raise RuntimeError("COBOTTAの書字に失敗した。")
     finally:
         writer.close()
 

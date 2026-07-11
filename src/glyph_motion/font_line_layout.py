@@ -100,10 +100,11 @@ class FontLineLayout:
         writing_direction: セルを並べる方向。``horizontal`` または
             ``vertical`` を指定する。
         mirror_horizontal: 各セル内の文字を水平方向に反転するかどうか。
-        mirror_vertical: 垂直方向反転の設定値。
+        mirror_vertical: 各セル内の文字を垂直方向に反転するかどうか。
 
     Raises:
         ValueError: 作業空間、セル寸法、文字高が正でない場合。
+        ValueError: セル寸法が作業空間を超える場合。
         ValueError: 文字高がセル高を超える場合。
         ValueError: 配置方向の指定が未対応の値である場合。
     """
@@ -139,10 +140,11 @@ class FontLineLayout:
             line_direction: セルを使用する順序。
             writing_direction: セルを並べる方向。
             mirror_horizontal: 各セル内の文字を水平方向に反転するかどうか。
-            mirror_vertical: 垂直方向反転の設定値。
+            mirror_vertical: 各セル内の文字を垂直方向に反転するかどうか。
 
         Raises:
             ValueError: 寸法値が正でない場合。
+            ValueError: セル寸法が作業空間を超える場合。
             ValueError: ``character_height`` が ``cell_height`` を超える場合。
             ValueError: ``line_direction`` または ``writing_direction`` が
                 未対応の値である場合。
@@ -159,6 +161,14 @@ class FontLineLayout:
             raise ValueError("cell_height は正の値である必要がある。")
         if character_height <= 0.0:
             raise ValueError("character_height は正の値である必要がある。")
+
+        # セル自体が作業空間を超える設定では、文字数が一文字であっても
+        # レイアウト結果が作業範囲外へ出る。縮小処理は行わないため、
+        # 初期化時点で設定不整合として扱う。
+        if cell_width > workspace_width:
+            raise ValueError("cell_width は workspace_width 以下である必要がある。")
+        if cell_height > workspace_height:
+            raise ValueError("cell_height は workspace_height 以下である必要がある。")
 
         # 文字高がセル高を超えると、上下中央揃えを行ってもセル外へはみ出す。
         # 本クラスでは縮小処理を行わないため、設定不整合として扱う。
@@ -184,7 +194,7 @@ class FontLineLayout:
 
         # writing_direction はセル原点を X 軸方向へ進めるか、Y 軸方向へ進めるかを
         # 選択する。セル内での文字座標変換は両者で共通である。
-        if writing_direction not in ("horizontal","vertical"):
+        if writing_direction not in ("horizontal", "vertical"):
             raise ValueError("writing_direction must be horizontal or vertical")
         self.writing_direction = writing_direction
         self.mirror_horizontal = bool(mirror_horizontal)
@@ -203,13 +213,16 @@ class FontLineLayout:
     def capacity(self) -> int:
         """作業空間に収容できる最大セル数を返す。
 
-        作業空間幅をセル幅で整数除算し、完全に収まるセルだけを数える。
-        端数として残る領域は、一文字分のセルとしては使用しない。
+        横書きでは作業空間幅をセル幅で、縦書きでは作業空間高さをセル高で
+        整数除算し、書字方向へ完全に収まるセルだけを数える。端数として残る
+        領域は、一文字分のセルとしては使用しない。
 
         Returns:
             作業空間へ配置できる最大文字数。
         """
-        return int(self.workspace_width // self.cell_width)
+        if self.writing_direction == "horizontal":
+            return int(self.workspace_width // self.cell_width)
+        return int(self.workspace_height // self.cell_height)
 
     def build(
         self,
@@ -319,12 +332,19 @@ class FontLineLayout:
                         local_x = positioned_x - cell_origin_x
                         positioned_x = cell_origin_x + self.cell_width - local_x
 
-                    # Y 座標には上下中央揃えのオフセットを加える。
-                    # 点の順序は変更せず、元のストローク方向をそのまま保持する。
+                    # Y 座標にも上下中央揃えのオフセットを加える。上下反転は
+                    # 作業空間全体ではなく、現在のセル内を基準に適用する。
+                    positioned_y = point.y + y_offset
+
+                    if self.mirror_vertical:
+                        local_y = positioned_y - cell_origin_y
+                        positioned_y = cell_origin_y + self.cell_height - local_y
+
+                    # 座標だけを変換し、点の順序とストローク方向は保持する。
                     points.append(
                         FontPoint(
                             x=positioned_x,
-                            y=point.y + y_offset,
+                            y=positioned_y,
                         )
                     )
 
