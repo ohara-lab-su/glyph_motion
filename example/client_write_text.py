@@ -15,8 +15,6 @@ def main() -> None:
         server_ip=SERVER_IP,
         # 接続先サーバーのポート番号。
         server_port=SERVER_PORT,
-        # HTTP要求のタイムアウト時間（秒）。
-        timeout_sec=180.0,
     )
 
     client.connect()
