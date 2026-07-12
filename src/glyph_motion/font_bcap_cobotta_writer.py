@@ -874,38 +874,47 @@ def main():
         port=5007,
         # 書字ワークスペースの大きさ
         workspace_width=200.0,
-        workspace_height=10.0,
-        # 一文字の箱の大きさ
+        # workspace_height=10.0,
+        workspace_height=100.0,
+        # 1文字に割り当てるセルの幅（mm）。
         cell_width=8.0,
+        # 1文字に割り当てるセルの高さ（mm）。
         cell_height=8.0,
-        # 箱の中の文字の高さ
+        # セル内に描画する文字の高さ（mm）。
         character_height=7.0,
-        # ---- ベジェ曲線の分割数
+        # 曲線を直線分割するときの分割数。
         curve_division=16,
-        # ペン上げ高さ [mm]
-        pen_lift_mm=1.0,
-        # ロボット座標系の方向
+        # 筆画間でペンを持ち上げる高さ（mm）。
+        pen_lift_mm=1.7,
+        # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
+        # 文字座標Yをロボット座標へ変換するときの符号。
         robot_y_sign=1.0,
-        # ロボット座標系をxy入れ替え
+        # 文字座標のX軸とY軸をロボット座標へ割り当てる際に入れ替えるかどうか。
         robot_swap_xy=True,
-        # 文字を配置する順序
+        # 横書き時の文字進行方向。縦書き時には使用しない。
         line_direction="left_to_right",
-        # 横書き・縦書き
-        writing_direction="horizontal",
-        # 縦書き時の進行方向
+        # line_direction="right_to_left",
+        # 文字列を横書きまたは縦書きのどちらで配置するか。
+        # writing_direction="horizontal",
+        writing_direction="vertical",
+        # 縦書き時の文字進行方向。横書き時には使用しない。
         vertical_direction="top_to_bottom",
-        # 文字の左右反転
-        mirror_horizontal=False,
-        # 文字の上下反転
+        # vertical_direction="bottom_to_top",
+        # 各文字をセル内で左右反転するかどうか。
+        # mirror_horizontal=False,
+        mirror_horizontal=True,
+        # 各文字をセル内で上下反転するかどうか。
         mirror_vertical=False,
-        # 書字速度
+        # 筆画を描画するときのロボット速度。
         drawing_speed=35,
-        # 空走速度
+        # ペンを上げた状態で移動するときのロボット速度。
         travel_speed=40,
-        # ペン上下速度
+        # ペンを上下させるときのロボット速度。
         pen_speed=20,
+        # ロボット動作の加速度設定。
         accel=100,
+        # ロボット動作の減速度設定。
         decel=100,
     )
 
