@@ -53,8 +53,9 @@ class FontBcapCobottaWriterConfig:
         robot_x_sign: 文字座標の X 成分に適用する符号。
         robot_y_sign: 文字座標の Y 成分に適用する符号。
         robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
-        line_direction: 行内に文字を並べる方向。
+        line_direction: 横書き時に文字を並べる方向。
         writing_direction: 横書きまたは縦書きの指定。
+        vertical_direction: 縦書き時に文字を並べる方向。
         mirror_horizontal: 文字を左右反転するか。
         mirror_vertical: 文字を上下反転するか。
         drawing_speed: 筆画を描画する際の速度設定。
@@ -89,6 +90,8 @@ class FontBcapCobottaWriterConfig:
         line_direction="left_to_right",
         # 横書き・縦書き
         writing_direction="horizontal",
+        # 縦書き時の進行方向
+        vertical_direction="top_to_bottom",
         # 文字の左右反転
         mirror_horizontal=False,
         # 文字の上下反転
@@ -117,6 +120,7 @@ class FontBcapCobottaWriterConfig:
         self.robot_swap_xy = bool(robot_swap_xy)
         self.line_direction = str(line_direction)
         self.writing_direction = str(writing_direction)
+        self.vertical_direction = str(vertical_direction)
         self.mirror_horizontal = bool(mirror_horizontal)
         self.mirror_vertical = bool(mirror_vertical)
         self.drawing_speed = int(drawing_speed)
@@ -159,6 +163,8 @@ class FontBcapCobottaWriter:
         self._owns_bcap = bcap is None
         self._connected = False
         self._prepared = False
+        self._write_in_progress = False
+        self._emergency_pen_up_z = None
 
         self._layout = FontLineLayout(
             kanjivg_directory=config.kanjivg_directory,
@@ -170,6 +176,7 @@ class FontBcapCobottaWriter:
             curve_division=config.curve_division,
             line_direction=config.line_direction,
             writing_direction=config.writing_direction,
+            vertical_direction=config.vertical_direction,
             mirror_horizontal=config.mirror_horizontal,
             mirror_vertical=config.mirror_vertical,
         )
@@ -241,9 +248,13 @@ class FontBcapCobottaWriter:
 
         try:
             if self._prepared:
+                if self._write_in_progress:
+                    self._emergency_lift_pen()
                 self._bcap.give_arm()
         finally:
             self._prepared = False
+            self._write_in_progress = False
+            self._emergency_pen_up_z = None
 
         if self._owns_bcap:
             self._bcap.disconnect()
@@ -264,6 +275,7 @@ class FontBcapCobottaWriter:
         robot_swap_xy: Optional[bool] = None,
         line_direction: Optional[str] = None,
         writing_direction: Optional[str] = None,
+        vertical_direction: Optional[str] = None,
         mirror_horizontal: Optional[bool] = None,
         mirror_vertical: Optional[bool] = None,
         drawing_speed: Optional[int] = None,
@@ -294,8 +306,9 @@ class FontBcapCobottaWriter:
             robot_x_sign: 文字 X 座標へ適用する新しい符号。
             robot_y_sign: 文字 Y 座標へ適用する新しい符号。
             robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
-            line_direction: 新しい文字配列方向。
+            line_direction: 横書き時の新しい進行方向。
             writing_direction: 新しい書字方向。
+            vertical_direction: 縦書き時の新しい進行方向。
             mirror_horizontal: 左右反転を有効にするか。
             mirror_vertical: 上下反転を有効にするか。
             drawing_speed: 新しい描画速度。
@@ -320,6 +333,7 @@ class FontBcapCobottaWriter:
         new_curve_division = self.config.curve_division
         new_line_direction = self.config.line_direction
         new_writing_direction = self.config.writing_direction
+        new_vertical_direction = self.config.vertical_direction
         new_mirror_horizontal = self.config.mirror_horizontal
         new_mirror_vertical = self.config.mirror_vertical
 
@@ -359,6 +373,10 @@ class FontBcapCobottaWriter:
             new_writing_direction = str(writing_direction)
             layout_changed = True
 
+        if vertical_direction is not None:
+            new_vertical_direction = str(vertical_direction)
+            layout_changed = True
+
         if mirror_horizontal is not None:
             new_mirror_horizontal = bool(mirror_horizontal)
             layout_changed = True
@@ -380,6 +398,7 @@ class FontBcapCobottaWriter:
                 curve_division=new_curve_division,
                 line_direction=new_line_direction,
                 writing_direction=new_writing_direction,
+                vertical_direction=new_vertical_direction,
                 mirror_horizontal=new_mirror_horizontal,
                 mirror_vertical=new_mirror_vertical,
             )
@@ -393,6 +412,7 @@ class FontBcapCobottaWriter:
         self.config.curve_division = new_curve_division
         self.config.line_direction = new_line_direction
         self.config.writing_direction = new_writing_direction
+        self.config.vertical_direction = new_vertical_direction
         self.config.mirror_horizontal = new_mirror_horizontal
         self.config.mirror_vertical = new_mirror_vertical
 
@@ -494,6 +514,10 @@ class FontBcapCobottaWriter:
         surface_z = float(start_pose[2]) - start_height_mm
         pen_up_z = surface_z + self.config.pen_lift_mm
 
+        # 書字途中で失敗した場合に、close() から予定したペン上げ高さへ退避できるよう保持する。
+        self._write_in_progress = True
+        self._emergency_pen_up_z = pen_up_z
+
         first_point = strokes[0].points[0]
 
         # 開始位置が書字面上の場合だけ、その場でペンを上げてから最初の始点へ向かう。
@@ -588,7 +612,51 @@ class FontBcapCobottaWriter:
             ):
                 return False
 
+        self._write_in_progress = False
+        self._emergency_pen_up_z = None
         return True
+
+    def _emergency_lift_pen(self):
+        """書字失敗時に現在位置から予定したペン上げ高さへ退避する。
+
+        コントローラエラーを解除して現在位置を再取得し、現在の XY と姿勢を維持した
+        まま Z 方向だけを同期移動する。現在位置が予定したペン上げ高さより既に高い
+        場合は、ペンを下げないよう現在の Z を維持する。退避処理の失敗はログへ記録し、
+        close() によるアーム権限返却と切断処理は継続する。
+
+        Returns:
+            緊急退避に成功した場合は ``True``。退避先が未設定、またはロボット操作に
+            失敗した場合は ``False``。
+        """
+        if self._emergency_pen_up_z is None:
+            self._logger.error("緊急退避先のペン上げ高さが設定されていない。")
+            return False
+
+        self._logger.error("書字失敗のため、ペンの緊急退避を実行する。")
+
+        try:
+            if not self._bcap.reset_error():
+                self._logger.error("緊急退避前のエラー解除に失敗した。")
+                return False
+
+            current_pose = self._read_pose()
+            target_z = max(
+                float(current_pose[2]),
+                float(self._emergency_pen_up_z),
+            )
+
+            if not self._move_z(
+                pose=current_pose,
+                target_z=target_z,
+            ):
+                self._logger.error("ペンの緊急退避動作に失敗した。")
+                return False
+
+            self._logger.info("ペンを緊急退避した。 target_z=%s", target_z)
+            return True
+        except Exception:
+            self._logger.exception("ペンの緊急退避中に例外が発生した。")
+            return False
 
     @staticmethod
     def _collect_strokes(characters):
@@ -860,36 +928,48 @@ def main():
         port=5007,
         # 書字ワークスペースの大きさ
         workspace_width=200.0,
-        workspace_height=10.0,
-        # 一文字の箱の大きさ
+        # workspace_height=10.0,
+        workspace_height=100.0,
+        # 1文字に割り当てるセルの幅（mm）。
         cell_width=8.0,
+        # 1文字に割り当てるセルの高さ（mm）。
         cell_height=8.0,
-        # 箱の中の文字の高さ
+        # セル内に描画する文字の高さ（mm）。
         character_height=7.0,
-        # ---- ベジェ曲線の分割数
+        # 曲線を直線分割するときの分割数。
         curve_division=16,
-        # ペン上げ高さ [mm]
-        pen_lift_mm=1.0,
-        # ロボット座標系の方向
+        # 筆画間でペンを持ち上げる高さ（mm）。
+        #pen_lift_mm=1.7,
+        pen_lift_mm=17,
+        # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
+        # 文字座標Yをロボット座標へ変換するときの符号。
         robot_y_sign=1.0,
-        # ロボット座標系をxy入れ替え
+        # 文字座標のX軸とY軸をロボット座標へ割り当てる際に入れ替えるかどうか。
         robot_swap_xy=True,
-        # 文字を配置する順序
+        # 横書き時の文字進行方向。縦書き時には使用しない。
         line_direction="left_to_right",
-        # 横書き・縦書き
-        writing_direction="horizontal",
-        # 文字の左右反転
-        mirror_horizontal=False,
-        # 文字の上下反転
+        # line_direction="right_to_left",
+        # 文字列を横書きまたは縦書きのどちらで配置するか。
+        # writing_direction="horizontal",
+        writing_direction="vertical",
+        # 縦書き時の文字進行方向。横書き時には使用しない。
+        vertical_direction="top_to_bottom",
+        # vertical_direction="bottom_to_top",
+        # 各文字をセル内で左右反転するかどうか。
+        # mirror_horizontal=False,
+        mirror_horizontal=True,
+        # 各文字をセル内で上下反転するかどうか。
         mirror_vertical=False,
-        # 書字速度
+        # 筆画を描画するときのロボット速度。
         drawing_speed=35,
-        # 空走速度
+        # ペンを上げた状態で移動するときのロボット速度。
         travel_speed=40,
-        # ペン上下速度
+        # ペンを上下させるときのロボット速度。
         pen_speed=20,
+        # ロボット動作の加速度設定。
         accel=100,
+        # ロボット動作の減速度設定。
         decel=100,
     )
 
@@ -902,8 +982,8 @@ def main():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
 
         if not writer.write(
-            # text="島根大学 尾原研究室",
-            text="島根大学",
+            text="島根大学 尾原研究室",
+            # text="島根大学",
             start_height_mm=1.0,
             return_to_start=True,
         ):

@@ -95,10 +95,11 @@ class FontLineLayout:
         cell_height: 一文字へ割り当てるセルの高さ。
         character_height: KanjiVG から読み込む文字の基準高さ。
         curve_division: ベジェ曲線を折れ線へ分割するときの分割数。
-        line_direction: セルを使用する順序。``left_to_right`` または
+        line_direction: 横書き時の進行方向。``left_to_right`` または
             ``right_to_left`` を指定する。
-        writing_direction: セルを並べる方向。``horizontal`` または
-            ``vertical`` を指定する。
+        writing_direction: 文字列を横書きまたは縦書きのどちらで配置するか。
+        vertical_direction: 縦書き時の進行方向。``top_to_bottom`` または
+            ``bottom_to_top`` を指定する。
         mirror_horizontal: 各セル内の文字を水平方向に反転するかどうか。
         mirror_vertical: 各セル内の文字を垂直方向に反転するかどうか。
 
@@ -120,6 +121,7 @@ class FontLineLayout:
         curve_division: int = 16,
         line_direction: str = "left_to_right",
         writing_direction: str = "horizontal",
+        vertical_direction: str = "top_to_bottom",
         mirror_horizontal: bool = False,
         mirror_vertical: bool = False,
     ) -> None:
@@ -137,8 +139,9 @@ class FontLineLayout:
             cell_height: 一文字へ割り当てるセルの高さ。
             character_height: KanjiVG から読み込む文字の基準高さ。
             curve_division: ベジェ曲線を折れ線へ分割するときの分割数。
-            line_direction: セルを使用する順序。
-            writing_direction: セルを並べる方向。
+            line_direction: 横書き時の進行方向。
+            writing_direction: 横書きまたは縦書きの指定。
+            vertical_direction: 縦書き時の進行方向。
             mirror_horizontal: 各セル内の文字を水平方向に反転するかどうか。
             mirror_vertical: 各セル内の文字を垂直方向に反転するかどうか。
 
@@ -146,8 +149,7 @@ class FontLineLayout:
             ValueError: 寸法値が正でない場合。
             ValueError: セル寸法が作業空間を超える場合。
             ValueError: ``character_height`` が ``cell_height`` を超える場合。
-            ValueError: ``line_direction`` または ``writing_direction`` が
-                未対応の値である場合。
+            ValueError: 書字方向または進行方向が未対応の値である場合。
         """
         # ゼロ以下の寸法ではセル分割や中央揃えの意味が成立しないため、
         # レイアウト処理へ入る前に入力条件として排除する。
@@ -183,20 +185,26 @@ class FontLineLayout:
         self.cell_height = float(cell_height)
         self.character_height = float(character_height)
 
-        # 行方向は、入力文字列の先頭を作業空間のどちら側へ置くかを決定する。
-        # 文字データ自体の筆順やストローク順は変更しない。
+        # writing_direction は文字列を並べる軸だけを決定する。横書きと縦書きで
+        # 進行方向の語彙を混在させないため、左右方向と上下方向は別々に保持する。
+        if writing_direction not in ("horizontal", "vertical"):
+            raise ValueError(
+                "writing_direction は horizontal または vertical を指定してください。"
+            )
+
         if line_direction not in ("left_to_right", "right_to_left"):
             raise ValueError(
                 "line_direction は left_to_right または right_to_left を指定してください。"
             )
 
-        self.line_direction = line_direction
+        if vertical_direction not in ("top_to_bottom", "bottom_to_top"):
+            raise ValueError(
+                "vertical_direction は top_to_bottom または bottom_to_top を指定してください。"
+            )
 
-        # writing_direction はセル原点を X 軸方向へ進めるか、Y 軸方向へ進めるかを
-        # 選択する。セル内での文字座標変換は両者で共通である。
-        if writing_direction not in ("horizontal", "vertical"):
-            raise ValueError("writing_direction must be horizontal or vertical")
         self.writing_direction = writing_direction
+        self.line_direction = line_direction
+        self.vertical_direction = vertical_direction
         self.mirror_horizontal = bool(mirror_horizontal)
         self.mirror_vertical = bool(mirror_vertical)
 
@@ -241,8 +249,8 @@ class FontLineLayout:
         7. 配置済み文字情報として結果へ追加する。
 
         入力文字列の順序は ``PositionedCharacter.index`` に保持される。
-        ``right_to_left`` を指定した場合も返却リストの順序は入力文字列と同じで、
-        割り当てられるセル位置だけが反転する。
+        返却リストの順序と各文字の筆順は常に入力順を維持し、進行方向の指定は
+        各文字へ割り当てるセル原点の増分符号だけを変更する。
 
         Args:
             text: 配置する文字列。空白文字も一文字分のセルを使用する。
@@ -267,21 +275,25 @@ class FontLineLayout:
         positioned_characters = []
 
         for character_index, character in enumerate(text):
-            # 入力文字列中の位置と、実際に使用するセル番号を分離する。
-            # 右から左へ配置する場合でも character_index は変更せず、入力順を保持する。
-            if self.line_direction == "left_to_right":
-                cell_index = character_index
-            else:
-                cell_index = self.capacity - 1 - character_index
+            # 先頭文字は常に作業原点のセルへ置く。進行方向を反転するときも
+            # 作業空間の反対端へ先頭文字を飛ばさず、セル間の増分符号だけを変える。
+            # これにより、書字開始位置と最初の文字位置の関係を方向に依存させない。
+            cell_index = character_index
 
-            # セル原点は作業空間の原点を基準として決定する。
-            # horizontal では X 軸方向、vertical では Y 軸方向へセルを積み上げる。
             if self.writing_direction == "horizontal":
-                cell_origin_x = float(cell_index) * self.cell_width
+                if self.line_direction == "left_to_right":
+                    cell_step = self.cell_width
+                else:
+                    cell_step = -self.cell_width
+                cell_origin_x = float(cell_index) * cell_step
                 cell_origin_y = 0.0
             else:
                 cell_origin_x = 0.0
-                cell_origin_y = float(cell_index) * self.cell_height
+                if self.vertical_direction == "top_to_bottom":
+                    cell_step = -self.cell_height
+                else:
+                    cell_step = self.cell_height
+                cell_origin_y = float(cell_index) * cell_step
 
             # 空白文字は文字間隔として意味を持つため、セル自体は消費する。
             # 一方で描画対象の点列は存在しないので、ローダーを呼ばず空のまま保持する。
