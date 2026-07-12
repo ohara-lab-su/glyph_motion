@@ -163,6 +163,8 @@ class FontBcapCobottaWriter:
         self._owns_bcap = bcap is None
         self._connected = False
         self._prepared = False
+        self._write_in_progress = False
+        self._emergency_pen_up_z = None
 
         self._layout = FontLineLayout(
             kanjivg_directory=config.kanjivg_directory,
@@ -246,9 +248,13 @@ class FontBcapCobottaWriter:
 
         try:
             if self._prepared:
+                if self._write_in_progress:
+                    self._emergency_lift_pen()
                 self._bcap.give_arm()
         finally:
             self._prepared = False
+            self._write_in_progress = False
+            self._emergency_pen_up_z = None
 
         if self._owns_bcap:
             self._bcap.disconnect()
@@ -508,6 +514,10 @@ class FontBcapCobottaWriter:
         surface_z = float(start_pose[2]) - start_height_mm
         pen_up_z = surface_z + self.config.pen_lift_mm
 
+        # 書字途中で失敗した場合に、close() から予定したペン上げ高さへ退避できるよう保持する。
+        self._write_in_progress = True
+        self._emergency_pen_up_z = pen_up_z
+
         first_point = strokes[0].points[0]
 
         # 開始位置が書字面上の場合だけ、その場でペンを上げてから最初の始点へ向かう。
@@ -602,7 +612,51 @@ class FontBcapCobottaWriter:
             ):
                 return False
 
+        self._write_in_progress = False
+        self._emergency_pen_up_z = None
         return True
+
+    def _emergency_lift_pen(self):
+        """書字失敗時に現在位置から予定したペン上げ高さへ退避する。
+
+        コントローラエラーを解除して現在位置を再取得し、現在の XY と姿勢を維持した
+        まま Z 方向だけを同期移動する。現在位置が予定したペン上げ高さより既に高い
+        場合は、ペンを下げないよう現在の Z を維持する。退避処理の失敗はログへ記録し、
+        close() によるアーム権限返却と切断処理は継続する。
+
+        Returns:
+            緊急退避に成功した場合は ``True``。退避先が未設定、またはロボット操作に
+            失敗した場合は ``False``。
+        """
+        if self._emergency_pen_up_z is None:
+            self._logger.error("緊急退避先のペン上げ高さが設定されていない。")
+            return False
+
+        self._logger.error("書字失敗のため、ペンの緊急退避を実行する。")
+
+        try:
+            if not self._bcap.reset_error():
+                self._logger.error("緊急退避前のエラー解除に失敗した。")
+                return False
+
+            current_pose = self._read_pose()
+            target_z = max(
+                float(current_pose[2]),
+                float(self._emergency_pen_up_z),
+            )
+
+            if not self._move_z(
+                pose=current_pose,
+                target_z=target_z,
+            ):
+                self._logger.error("ペンの緊急退避動作に失敗した。")
+                return False
+
+            self._logger.info("ペンを緊急退避した。 target_z=%s", target_z)
+            return True
+        except Exception:
+            self._logger.exception("ペンの緊急退避中に例外が発生した。")
+            return False
 
     @staticmethod
     def _collect_strokes(characters):
