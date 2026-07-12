@@ -38,8 +38,8 @@ def main() -> None:
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        # pen_lift_mm=1.7,
-        pen_lift_mm=17,
+        pen_lift_mm=1.7,
+        # pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
         # 文字座標Yをロボット座標へ変換するときの符号。
