@@ -47,6 +47,7 @@ def main() -> None:
         line_direction="right_to_left",
         # 文字列を横書きまたは縦書きのどちらで配置するか。
         writing_direction="horizontal",
+        # writing_direction="vertical",
         # 各文字をセル内で左右反転するかどうか。
         #mirror_horizontal=False,
         mirror_horizontal=True,
