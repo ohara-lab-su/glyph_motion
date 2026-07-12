@@ -19,6 +19,11 @@ def main() -> None:
         timeout_sec=180.0,
     )
 
+    client.connect()
+    client.reset_error()
+    client.take_arm()
+    client.motor_on()
+
     client.set_params(
         # KanjiVGデータを格納したディレクトリ。Noneの場合はサーバー側の既定値を使用する。
         kanjivg_directory=None,
@@ -35,7 +40,7 @@ def main() -> None:
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        #pen_lift_mm=1.7,
+        # pen_lift_mm=1.7,
         pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
@@ -53,7 +58,7 @@ def main() -> None:
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
         # 各文字をセル内で左右反転するかどうか。
-        #mirror_horizontal=False,
+        # mirror_horizontal=False,
         mirror_horizontal=True,
         # 各文字をセル内で上下反転するかどうか。
         mirror_vertical=False,
@@ -78,6 +83,9 @@ def main() -> None:
         return_to_start=True,
     )
     print(result)
+
+    client.give_arm()
+    client.disconnect()
 
 
 if __name__ == "__main__":
