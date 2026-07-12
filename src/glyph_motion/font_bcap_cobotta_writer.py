@@ -940,7 +940,7 @@ def main():
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
         #pen_lift_mm=1.7,
-        pen_lift_mm=0.1,
+        pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
         # 文字座標Yをロボット座標へ変換するときの符号。
@@ -982,8 +982,8 @@ def main():
             raise RuntimeError("COBOTTAの書字準備に失敗した。")
 
         if not writer.write(
-            # text="島根大学 尾原研究室",
-            text="島根大学",
+            text="島根大学 尾原研究室",
+            # text="島根大学",
             start_height_mm=1.0,
             return_to_start=True,
         ):

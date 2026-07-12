@@ -35,7 +35,8 @@ def main() -> None:
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        pen_lift_mm=1.7,
+        #pen_lift_mm=1.7,
+        pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
         # 文字座標Yをロボット座標へ変換するときの符号。
@@ -46,8 +47,8 @@ def main() -> None:
         line_direction="left_to_right",
         # line_direction="right_to_left",
         # 文字列を横書きまたは縦書きのどちらで配置するか。
-        # writing_direction="horizontal",
-        writing_direction="vertical",
+        writing_direction="horizontal",
+        # writing_direction="vertical",
         # 縦書き時の文字進行方向。横書き時には使用しない。
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
