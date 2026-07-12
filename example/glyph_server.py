@@ -17,7 +17,8 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
     # KanjiVGデータを格納したディレクトリ。Noneの場合はサーバー側の既定値を使用する。
     kanjivg_directory=Path(
         # r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG"
-        r"C:\Users\nakada\Desktop\kanji",
+        # r"C:\Users\nakada\Desktop\kanji",
+        r"C:\opt\ese774\bin\glyph_motion\kanji",
     ),
     host="10.170.10.36",  # cobotta2
     # host="10.170.10.53",  # cobotta3
