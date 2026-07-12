@@ -162,7 +162,7 @@ class FontBcapCobottaWriter:
         self._bcap = bcap
         self._owns_bcap = bcap is None
         self._connected = False
-        self._prepared = False
+        self._arm_taken = False
         self._write_in_progress = False
         self._emergency_pen_up_z = None
 
@@ -207,58 +207,99 @@ class FontBcapCobottaWriter:
         self._connected = True
         return True
 
-    def prepare(self):
-        """書字開始前に必要なロボット状態を準備する。
+    def disconnect(self):
+        """COBOTTA との b-CAP 接続を切断する。
 
-        接続、エラー解除、アーム権限取得、モータ投入、加速度設定、減速度設定を
-        この順序で実行する。途中で失敗した場合は以後の処理を行わず ``False`` を
-        返す。
+        他のロボット操作は行わず、通信接続だけを切断する。
 
         Returns:
-            すべての準備処理に成功した場合は ``True``。いずれかが失敗した場合は
-            ``False``。
+            切断に成功した場合は ``True``。未接続の場合も ``True``。
         """
-        if not self._connected:
-            if not self.connect():
-                return False
+        if self._bcap is None or not self._connected:
+            return True
 
-        if not self._bcap.reset_error():
-            return False
-        if not self._bcap.take_arm():
-            return False
-        if not self._bcap.motor_on():
-            return False
-        if not self._bcap.set_accel(self.config.accel):
-            return False
-        if not self._bcap.set_decel(self.config.decel):
+        result = self._bcap.disconnect()
+        if result is False:
             return False
 
-        self._prepared = True
+        self._connected = False
         return True
 
-    def close(self):
-        """書字に使用したアーム権限と通信接続を解放する。
+    def reset_error(self):
+        """コントローラのエラーを解除する。
 
-        書字準備が完了している場合は、接続の所有関係にかかわらずアーム権限を返す。
-        b-CAP インスタンスを本クラスが生成した場合だけ通信を切断する。外部から
-        渡された接続は、呼び出し元が継続利用できるよう切断しない。
+        Returns:
+            エラー解除に成功した場合は ``True``、失敗した場合は ``False``。
         """
+        if not self._connected or self._bcap is None:
+            return False
+        return self._bcap.reset_error()
+
+    def take_arm(self):
+        """アーム権限を取得する。
+
+        他の準備処理は行わず、TakeArm だけを実行する。
+
+        Returns:
+            アーム権限の取得に成功した場合は ``True``、失敗した場合は ``False``。
+        """
+        if not self._connected or self._bcap is None:
+            return False
+
+        if not self._bcap.take_arm():
+            return False
+
+        self._arm_taken = True
+        return True
+
+    def give_arm(self):
+        """取得済みのアーム権限を返却する。
+
+        緊急退避や切断などの別操作は行わず、GiveArm だけを実行する。
+
+        Returns:
+            アーム権限の返却に成功した場合は ``True``。未取得の場合も ``True``。
+        """
+        if not self._arm_taken:
+            return True
         if self._bcap is None:
-            return
+            return False
 
-        try:
-            if self._prepared:
-                if self._write_in_progress:
-                    self._emergency_lift_pen()
-                self._bcap.give_arm()
-        finally:
-            self._prepared = False
-            self._write_in_progress = False
-            self._emergency_pen_up_z = None
+        if not self._bcap.give_arm():
+            return False
 
-        if self._owns_bcap:
-            self._bcap.disconnect()
-            self._connected = False
+        self._arm_taken = False
+        return True
+
+    def motor_on(self):
+        """ロボットのモータを投入する。
+
+        Returns:
+            モータ投入に成功した場合は ``True``、失敗した場合は ``False``。
+        """
+        if not self._connected or self._bcap is None:
+            return False
+        return self._bcap.motor_on()
+
+    def set_accel(self):
+        """設定済みの加速度をロボットへ反映する。
+
+        Returns:
+            加速度設定に成功した場合は ``True``、失敗した場合は ``False``。
+        """
+        if not self._connected or self._bcap is None:
+            return False
+        return self._bcap.set_accel(self.config.accel)
+
+    def set_decel(self):
+        """設定済みの減速度をロボットへ反映する。
+
+        Returns:
+            減速度設定に成功した場合は ``True``、失敗した場合は ``False``。
+        """
+        if not self._connected or self._bcap is None:
+            return False
+        return self._bcap.set_decel(self.config.decel)
 
     def set_params(
         self,
@@ -291,9 +332,6 @@ class FontBcapCobottaWriter:
         :class:`FontLineLayout` を構築した後で設定へ反映する。これにより、
         レイアウト生成に失敗した状態で既存設定だけが部分的に更新されることを防ぐ。
 
-        書字準備後に加速度または減速度を変更した場合は、保持値を更新するだけでなく
-        ロボット側にも直ちに反映する。
-
         Args:
             kanjivg_directory: 新しい KanjiVG ディレクトリ。
             workspace_width: 新しい作業空間幅 [mm]。
@@ -318,8 +356,7 @@ class FontBcapCobottaWriter:
             decel: 新しい減速度。
 
         Returns:
-            設定更新と、必要なロボット側設定の反映に成功した場合は ``True``。
-            ロボットへの加減速設定に失敗した場合は ``False``。
+            設定更新に成功した場合は ``True``。
         """
         # レイアウト生成に関係する変更と、ロボット動作だけに関係する変更を分けて扱う。
         layout_changed = False
@@ -446,15 +483,6 @@ class FontBcapCobottaWriter:
         if new_layout is not None:
             self._layout = new_layout
 
-        if self._prepared:
-            if accel is not None:
-                if not self._bcap.set_accel(self.config.accel):
-                    return False
-
-            if decel is not None:
-                if not self._bcap.set_decel(self.config.decel):
-                    return False
-
         return True
 
     def write(
@@ -496,9 +524,8 @@ class FontBcapCobottaWriter:
         if start_height_mm < 0.0:
             raise ValueError("start_height_mm は 0.0 以上で指定してください。")
 
-        if not self._prepared:
-            if not self.prepare():
-                return False
+        if not self._connected or self._bcap is None:
+            return False
 
         # 文字配置とロボット動作生成を分離し、ここでは配置済み筆画だけを受け取る。
         characters = self._layout.build(text)
@@ -514,7 +541,7 @@ class FontBcapCobottaWriter:
         surface_z = float(start_pose[2]) - start_height_mm
         pen_up_z = surface_z + self.config.pen_lift_mm
 
-        # 書字途中で失敗した場合に、close() から予定したペン上げ高さへ退避できるよう保持する。
+        # 書字途中で失敗した場合に、明示的な緊急退避で使用する高さを保持する。
         self._write_in_progress = True
         self._emergency_pen_up_z = pen_up_z
 
@@ -616,21 +643,19 @@ class FontBcapCobottaWriter:
         self._emergency_pen_up_z = None
         return True
 
-    def _emergency_lift_pen(self):
+    def emergency_lift_pen(self):
         """書字失敗時に現在位置から予定したペン上げ高さへ退避する。
 
         コントローラエラーを解除して現在位置を再取得し、現在の XY と姿勢を維持した
         まま Z 方向だけを同期移動する。現在位置が予定したペン上げ高さより既に高い
-        場合は、ペンを下げないよう現在の Z を維持する。退避処理の失敗はログへ記録し、
-        close() によるアーム権限返却と切断処理は継続する。
+        場合は、ペンを下げないよう現在の Z を維持する。退避処理の失敗はログへ記録する。
 
         Returns:
             緊急退避に成功した場合は ``True``。退避先が未設定、またはロボット操作に
             失敗した場合は ``False``。
         """
         if self._emergency_pen_up_z is None:
-            self._logger.error("緊急退避先のペン上げ高さが設定されていない。")
-            return False
+            return True
 
         self._logger.error("書字失敗のため、ペンの緊急退避を実行する。")
 
@@ -914,9 +939,8 @@ class FontBcapCobottaWriter:
 def main():
     """実機接続を用いた一行書字の単体実行例を実行する。
 
-    設定値から writer を生成し、接続、書字準備、書字の順に実行する。終了時は
-    成否にかかわらず :meth:`FontBcapCobottaWriter.close` を呼び出し、取得した
-    アーム権限と所有する通信接続を解放する。
+    設定値から writer を生成し、接続、各準備操作、書字の順に個別実行する。
+    終了時も、必要なペン退避、アーム権限返却、切断を個別に実行する。
     """
     config = FontBcapCobottaWriterConfig(
         kanjivg_directory=Path(
@@ -978,8 +1002,16 @@ def main():
     try:
         if not writer.connect():
             raise RuntimeError("COBOTTAへ接続できない。")
-        if not writer.prepare():
-            raise RuntimeError("COBOTTAの書字準備に失敗した。")
+        if not writer.reset_error():
+            raise RuntimeError("COBOTTAのエラー解除に失敗した。")
+        if not writer.take_arm():
+            raise RuntimeError("COBOTTAのアーム権限取得に失敗した。")
+        if not writer.motor_on():
+            raise RuntimeError("COBOTTAのモータ投入に失敗した。")
+        if not writer.set_accel():
+            raise RuntimeError("COBOTTAの加速度設定に失敗した。")
+        if not writer.set_decel():
+            raise RuntimeError("COBOTTAの減速度設定に失敗した。")
 
         if not writer.write(
             text="島根大学 尾原研究室",
@@ -989,7 +1021,9 @@ def main():
         ):
             raise RuntimeError("COBOTTAの書字に失敗した。")
     finally:
-        writer.close()
+        writer.emergency_lift_pen()
+        writer.give_arm()
+        writer.disconnect()
 
 
 if __name__ == "__main__":

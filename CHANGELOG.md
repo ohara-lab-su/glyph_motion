@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.4 (2026-07-13)
+
+- 累積bugfix
+
+### Added
+
+- take arm / give arm ... などの処理をまとめるのではなくて cobotta 等と同じく個別メソッドに変更
+
 ## v0.3.3 (2026-07-12)
 
 ### Added

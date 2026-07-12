@@ -17,7 +17,8 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
     # KanjiVGデータを格納したディレクトリ。Noneの場合はサーバー側の既定値を使用する。
     kanjivg_directory=Path(
         # r"C:\Users\nakada\zaiene_dev\glyph_motion\data\kanjiVG"
-        r"C:\Users\nakada\Desktop\kanji",
+        # r"C:\Users\nakada\Desktop\kanji",
+        r"C:\opt\ese774\bin\glyph_motion\kanji",
     ),
     host="10.170.10.36",  # cobotta2
     # host="10.170.10.53",  # cobotta3
@@ -35,8 +36,8 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
     # 曲線を直線分割するときの分割数。
     curve_division=16,
     # 筆画間でペンを持ち上げる高さ（mm）。
-    # pen_lift_mm=1.7,
-    pen_lift_mm=17,
+    pen_lift_mm=1.7,
+    # pen_lift_mm=17,
     # 文字座標Xをロボット座標へ変換するときの符号。
     robot_x_sign=1.0,
     # 文字座標Yをロボット座標へ変換するときの符号。
