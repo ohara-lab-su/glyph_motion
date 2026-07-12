@@ -23,7 +23,7 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
     port=5007,
     # 書字ワークスペースの大きさ
     workspace_width=200.0,
-    workspace_height=10.0,
+    workspace_height=200.0,
     # 一文字の箱の大きさ
     cell_width=8.0,
     cell_height=8.0,
@@ -38,10 +38,12 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
     robot_y_sign=1.0,
     # ロボット座標系をxy入れ替え
     robot_swap_xy=True,
-    # 横書き・縦書き
+    # 横書き時の進行方向
     line_direction="left_to_right",
     # 横書き・縦書き
     writing_direction="horizontal",
+    # 縦書き時の進行方向
+    vertical_direction="top_to_bottom",
     # 文字の左右反転
     mirror_horizontal=False,
     # 文字の上下反転

@@ -53,8 +53,9 @@ class FontBcapCobottaWriterConfig:
         robot_x_sign: 文字座標の X 成分に適用する符号。
         robot_y_sign: 文字座標の Y 成分に適用する符号。
         robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
-        line_direction: 行内に文字を並べる方向。
+        line_direction: 横書き時に文字を並べる方向。
         writing_direction: 横書きまたは縦書きの指定。
+        vertical_direction: 縦書き時に文字を並べる方向。
         mirror_horizontal: 文字を左右反転するか。
         mirror_vertical: 文字を上下反転するか。
         drawing_speed: 筆画を描画する際の速度設定。
@@ -89,6 +90,8 @@ class FontBcapCobottaWriterConfig:
         line_direction="left_to_right",
         # 横書き・縦書き
         writing_direction="horizontal",
+        # 縦書き時の進行方向
+        vertical_direction="top_to_bottom",
         # 文字の左右反転
         mirror_horizontal=False,
         # 文字の上下反転
@@ -117,6 +120,7 @@ class FontBcapCobottaWriterConfig:
         self.robot_swap_xy = bool(robot_swap_xy)
         self.line_direction = str(line_direction)
         self.writing_direction = str(writing_direction)
+        self.vertical_direction = str(vertical_direction)
         self.mirror_horizontal = bool(mirror_horizontal)
         self.mirror_vertical = bool(mirror_vertical)
         self.drawing_speed = int(drawing_speed)
@@ -170,6 +174,7 @@ class FontBcapCobottaWriter:
             curve_division=config.curve_division,
             line_direction=config.line_direction,
             writing_direction=config.writing_direction,
+            vertical_direction=config.vertical_direction,
             mirror_horizontal=config.mirror_horizontal,
             mirror_vertical=config.mirror_vertical,
         )
@@ -264,6 +269,7 @@ class FontBcapCobottaWriter:
         robot_swap_xy: Optional[bool] = None,
         line_direction: Optional[str] = None,
         writing_direction: Optional[str] = None,
+        vertical_direction: Optional[str] = None,
         mirror_horizontal: Optional[bool] = None,
         mirror_vertical: Optional[bool] = None,
         drawing_speed: Optional[int] = None,
@@ -294,8 +300,9 @@ class FontBcapCobottaWriter:
             robot_x_sign: 文字 X 座標へ適用する新しい符号。
             robot_y_sign: 文字 Y 座標へ適用する新しい符号。
             robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
-            line_direction: 新しい文字配列方向。
+            line_direction: 横書き時の新しい進行方向。
             writing_direction: 新しい書字方向。
+            vertical_direction: 縦書き時の新しい進行方向。
             mirror_horizontal: 左右反転を有効にするか。
             mirror_vertical: 上下反転を有効にするか。
             drawing_speed: 新しい描画速度。
@@ -320,6 +327,7 @@ class FontBcapCobottaWriter:
         new_curve_division = self.config.curve_division
         new_line_direction = self.config.line_direction
         new_writing_direction = self.config.writing_direction
+        new_vertical_direction = self.config.vertical_direction
         new_mirror_horizontal = self.config.mirror_horizontal
         new_mirror_vertical = self.config.mirror_vertical
 
@@ -359,6 +367,10 @@ class FontBcapCobottaWriter:
             new_writing_direction = str(writing_direction)
             layout_changed = True
 
+        if vertical_direction is not None:
+            new_vertical_direction = str(vertical_direction)
+            layout_changed = True
+
         if mirror_horizontal is not None:
             new_mirror_horizontal = bool(mirror_horizontal)
             layout_changed = True
@@ -380,6 +392,7 @@ class FontBcapCobottaWriter:
                 curve_division=new_curve_division,
                 line_direction=new_line_direction,
                 writing_direction=new_writing_direction,
+                vertical_direction=new_vertical_direction,
                 mirror_horizontal=new_mirror_horizontal,
                 mirror_vertical=new_mirror_vertical,
             )
@@ -393,6 +406,7 @@ class FontBcapCobottaWriter:
         self.config.curve_division = new_curve_division
         self.config.line_direction = new_line_direction
         self.config.writing_direction = new_writing_direction
+        self.config.vertical_direction = new_vertical_direction
         self.config.mirror_horizontal = new_mirror_horizontal
         self.config.mirror_vertical = new_mirror_vertical
 
@@ -879,6 +893,8 @@ def main():
         line_direction="left_to_right",
         # 横書き・縦書き
         writing_direction="horizontal",
+        # 縦書き時の進行方向
+        vertical_direction="top_to_bottom",
         # 文字の左右反転
         mirror_horizontal=False,
         # 文字の上下反転
