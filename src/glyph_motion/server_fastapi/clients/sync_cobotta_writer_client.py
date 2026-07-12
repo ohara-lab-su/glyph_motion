@@ -17,7 +17,6 @@ class SyncCobottaWriterClient(SyncDeviceClient):
         server_port: Optional[int] = None,
         logger: Optional[Any] = None,
         log_level: str = "INFO",
-        timeout_sec: float = 120.0,
     ) -> None:
         if config is not None:
             server_ip = getattr(config, "SERVER_IP", server_ip)
@@ -38,9 +37,3 @@ class SyncCobottaWriterClient(SyncDeviceClient):
             log_level=log_level,
             object_name="cobotta_writer",
         )
-
-        self.set_timeout(timeout_sec)
-
-    def close_client(self) -> None:
-        """HTTP client を同期的に閉じる。"""
-        self._sync_wrap(super().close())
