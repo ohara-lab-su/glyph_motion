@@ -35,7 +35,7 @@ def main() -> None:
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        pen_lift_mm=1.0,
+        pen_lift_mm=1.7,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
         # 文字座標Yをロボット座標へ変換するときの符号。
@@ -43,11 +43,13 @@ def main() -> None:
         # 文字座標のX軸とY軸をロボット座標へ割り当てる際に入れ替えるかどうか。
         robot_swap_xy=True,
         # 入力文字列を配置する順序。
-        line_direction="left_to_right",
+        # line_direction="left_to_right",
+        line_direction="right_to_left",
         # 文字列を横書きまたは縦書きのどちらで配置するか。
         writing_direction="horizontal",
         # 各文字をセル内で左右反転するかどうか。
-        mirror_horizontal=False,
+        #mirror_horizontal=False,
+        mirror_horizontal=True,
         # 各文字をセル内で上下反転するかどうか。
         mirror_vertical=False,
         # 筆画を描画するときのロボット速度。
