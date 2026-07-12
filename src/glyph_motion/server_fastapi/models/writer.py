@@ -29,6 +29,7 @@ class SetParamsRequest(BaseModel):
     robot_swap_xy: Optional[bool] = None
     line_direction: Optional[str] = None
     writing_direction: Optional[str] = None
+    vertical_direction: Optional[str] = None
     mirror_horizontal: Optional[bool] = None
     mirror_vertical: Optional[bool] = None
     drawing_speed: Optional[int] = None
