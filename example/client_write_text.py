@@ -7,8 +7,9 @@ from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 SERVER_IP = "10.170.10.38"  # server2
 # SERVER_IP = "10.170.10.41" # server3
 SERVER_PORT = 8000
-TEXT = "島根大学"
+# TEXT = "島根大学"
 # TEXT = "島根大学材料エネルギー学部"
+TEXT = "島根大学 尾原研究室"
 
 
 def main() -> None:
@@ -30,13 +31,13 @@ def main() -> None:
         # 1行分の書字領域の幅（mm）。
         workspace_width=265.0,
         # 1行分の書字領域の高さ（mm）。
-        workspace_height=12.0,
+        workspace_height=8.0,
         # 1文字に割り当てるセルの幅（mm）。
-        cell_width=10.0,
+        cell_width=7.4,
         # 1文字に割り当てるセルの高さ（mm）。
-        cell_height=10.0,
+        cell_height=7.4,
         # セル内に描画する文字の高さ（mm）。
-        character_height=8.8,
+        character_height=7.2,
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
@@ -79,7 +80,7 @@ def main() -> None:
         # 書字する文字列。
         text=TEXT,
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.4,
+        start_height_mm=1.7,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
