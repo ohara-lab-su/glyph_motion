@@ -7,9 +7,9 @@ from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 SERVER_IP = "10.170.10.38"  # server2
 # SERVER_IP = "10.170.10.41" # server3
 SERVER_PORT = 8000
-# TEXT = "島根大学"
+TEXT = "島根大学"
 # TEXT = "島根大学材料エネルギー学部"
-TEXT = "島根大学 尾原研究室"
+# TEXT = "島根大学 尾原研究室"
 
 
 def main() -> None:
