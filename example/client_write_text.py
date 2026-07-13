@@ -4,7 +4,8 @@
 from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 
 
-SERVER_IP = "10.170.10.38"
+# SERVER_IP = "10.170.10.38"  # server2
+SERVER_IP = "10.170.10.41" # server3
 SERVER_PORT = 8000
 TEXT = "島根"
 
