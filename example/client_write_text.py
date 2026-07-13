@@ -28,15 +28,15 @@ def main() -> None:
         # KanjiVGデータを格納したディレクトリ。Noneの場合はサーバー側の既定値を使用する。
         kanjivg_directory=None,
         # 1行分の書字領域の幅（mm）。
-        workspace_width=260.0,
+        workspace_width=265.0,
         # 1行分の書字領域の高さ（mm）。
-        workspace_height=20.0,
+        workspace_height=12.0,
         # 1文字に割り当てるセルの幅（mm）。
-        cell_width=7.0,
+        cell_width=10.0,
         # 1文字に割り当てるセルの高さ（mm）。
-        cell_height=7.0,
+        cell_height=10.0,
         # セル内に描画する文字の高さ（mm）。
-        character_height=6.8,
+        character_height=8.8,
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
@@ -49,8 +49,8 @@ def main() -> None:
         # 文字座標のX軸とY軸をロボット座標へ割り当てる際に入れ替えるかどうか。
         robot_swap_xy=True,
         # 横書き時の文字進行方向。縦書き時には使用しない。
-        line_direction="left_to_right",
-        # line_direction="right_to_left",
+        # line_direction="left_to_right",
+        line_direction="right_to_left",
         # 文字列を横書きまたは縦書きのどちらで配置するか。
         writing_direction="horizontal",
         # writing_direction="vertical",
@@ -58,11 +58,11 @@ def main() -> None:
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
         # 各文字をセル内で左右反転するかどうか。
-        mirror_horizontal=False,
-        # mirror_horizontal=True,
+        # mirror_horizontal=False,
+        mirror_horizontal=True,
         # 各文字をセル内で上下反転するかどうか。
-        # mirror_vertical=False,
-        mirror_vertical=True,
+        mirror_vertical=False,
+        # mirror_vertical=True,  # bug
         # 筆画を描画するときのロボット速度。
         drawing_speed=35,
         # ペンを上げた状態で移動するときのロボット速度。
@@ -79,7 +79,7 @@ def main() -> None:
         # 書字する文字列。
         text=TEXT,
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.0,
+        start_height_mm=2.4,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )

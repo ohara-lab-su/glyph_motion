@@ -25,7 +25,7 @@ from x_logger import XLogger
 
 if __name__ == "__main__":
     ##########
-    Config.load_yaml("config_cobotta2_server2.yaml")
+    Config.load_yaml("../config_cobotta2_server2.yaml")
     ##########
 
     logger = XLogger(
