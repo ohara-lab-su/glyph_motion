@@ -4,10 +4,11 @@
 from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 
 
-# SERVER_IP = "10.170.10.38"  # server2
-SERVER_IP = "10.170.10.41" # server3
+SERVER_IP = "10.170.10.38"  # server2
+# SERVER_IP = "10.170.10.41" # server3
 SERVER_PORT = 8000
-TEXT = "島根"
+TEXT = "島根大学"
+# TEXT = "島根大学材料エネルギー学部"
 
 
 def main() -> None:
@@ -27,19 +28,19 @@ def main() -> None:
         # KanjiVGデータを格納したディレクトリ。Noneの場合はサーバー側の既定値を使用する。
         kanjivg_directory=None,
         # 1行分の書字領域の幅（mm）。
-        workspace_width=200.0,
+        workspace_width=260.0,
         # 1行分の書字領域の高さ（mm）。
-        workspace_height=200.0,
+        workspace_height=20.0,
         # 1文字に割り当てるセルの幅（mm）。
-        cell_width=8.0,
+        cell_width=7.0,
         # 1文字に割り当てるセルの高さ（mm）。
-        cell_height=8.0,
+        cell_height=7.0,
         # セル内に描画する文字の高さ（mm）。
-        character_height=7.0,
+        character_height=6.8,
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        pen_lift_mm=1.7,
+        pen_lift_mm=2.0,
         # pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
@@ -57,10 +58,11 @@ def main() -> None:
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
         # 各文字をセル内で左右反転するかどうか。
-        # mirror_horizontal=False,
-        mirror_horizontal=True,
+        mirror_horizontal=False,
+        # mirror_horizontal=True,
         # 各文字をセル内で上下反転するかどうか。
-        mirror_vertical=False,
+        # mirror_vertical=False,
+        mirror_vertical=True,
         # 筆画を描画するときのロボット速度。
         drawing_speed=35,
         # ペンを上げた状態で移動するときのロボット速度。
@@ -77,7 +79,7 @@ def main() -> None:
         # 書字する文字列。
         text=TEXT,
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=1.0,
+        start_height_mm=2.0,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
