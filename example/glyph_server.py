@@ -9,7 +9,9 @@ from glyph_motion.server_fastapi.server import run
 
 
 # SERVER_HOST = "0.0.0.0"
-SERVER_HOST = "10.170.10.38"
+# SERVER_HOST = "10.170.10.38" # cobotta2/server2
+SERVER_HOST = "10.170.10.41" # cobotta4/server2
+
 SERVER_PORT = 8000
 LOG_LEVEL = "INFO"
 
@@ -20,8 +22,11 @@ WRITER_CONFIG = FontBcapCobottaWriterConfig(
         # r"C:\Users\nakada\Desktop\kanji",
         r"C:\opt\ese774\bin\glyph_motion\kanji",
     ),
-    host="10.170.10.36",  # cobotta2
+    ###################
+    # host="10.170.10.36",  # cobotta2
     # host="10.170.10.53",  # cobotta3
+    host="10.170.10.37",  # cobotta4
+    ###################
     port=5007,
     # 1行分の書字領域の幅（mm）。
     workspace_width=200.0,
