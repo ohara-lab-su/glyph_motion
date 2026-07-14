@@ -170,6 +170,9 @@ class FontBcapCobottaWriter:
         self._cursor_x = 0.0
         self._cursor_y = 0.0
         self._has_written = False
+        self._start_height_mm = 0.0
+        self._return_to_start = True
+        self._new_line = False
 
         self._layout = FontLineLayout(
             kanjivg_directory=config.kanjivg_directory,
@@ -495,12 +498,59 @@ class FontBcapCobottaWriter:
 
         return True
 
+    def set_start_height_mm(self, start_height_mm: float) -> bool:
+        """``write()`` の既定の書字開始高さを設定する。
+
+        Args:
+            start_height_mm: 書字開始位置が書字面より高い量 [mm]。
+                文字列として渡された数値も受け付ける。
+
+        Returns:
+            設定に成功した場合は ``True``。
+
+        Raises:
+            ValueError: ``start_height_mm`` が負の場合。
+        """
+        start_height_mm = float(start_height_mm)
+        if start_height_mm < 0.0:
+            raise ValueError("start_height_mm は 0.0 以上で指定してください。")
+
+        self._start_height_mm = start_height_mm
+        return True
+
+    def set_return_to_start(self, return_to_start: bool) -> bool:
+        """``write()`` 終了後の原点復帰動作の既定値を設定する。
+
+        Args:
+            return_to_start: 原点へ復帰する場合は ``True``。
+
+        Returns:
+            設定に成功した場合は ``True``。
+        """
+        self._return_to_start = bool(return_to_start)
+        return True
+
+    def set_new_line(self, new_line: bool) -> bool:
+        """次回以降の ``write()`` で改行するかの既定値を設定する。
+
+        最初の ``write()`` では改行せず、二回目以降の呼び出しで適用する。
+
+        Args:
+            new_line: 前回の文字列の次行または次列から書く場合は ``True``。
+                ``False`` の場合は前回の次文字セルから続けて書く。
+
+        Returns:
+            設定に成功した場合は ``True``。
+        """
+        self._new_line = bool(new_line)
+        return True
+
     def write(
         self,
         text: str,
-        start_height_mm: float = 0.0,
-        return_to_start: bool = True,
-        new_line: bool = False,
+        start_height_mm: Optional[float] = None,
+        return_to_start: Optional[bool] = None,
+        new_line: Optional[bool] = None,
     ) -> bool:
         """一行の文字列をロボットで書字する。
 
@@ -517,11 +567,13 @@ class FontBcapCobottaWriter:
         Args:
             text: 書く文字列。
             start_height_mm: ``write()`` 開始位置が書字面より高い量 [mm]。
-                ``0.0`` の場合は開始位置を書字面とみなす。
+                ``None`` の場合は :meth:`set_start_height_mm` の設定値を使用する。
             return_to_start: 書字終了後に ``write()`` 開始姿勢へ戻るか。
+                ``None`` の場合は :meth:`set_return_to_start` の設定値を使用する。
                 次回の論理的な書字位置には影響しない。
             new_line: 既に書字済みの場合、今回の文字列を次の行または次の列から
-                書き始めるか。``False`` の場合は、前回の文字列に続く次文字セルを
+                書き始めるか。``None`` の場合は :meth:`set_new_line` の設定値を
+                使用する。``False`` の場合は、前回の文字列に続く次文字セルを
                 今回の書字原点とする。
 
         Returns:
@@ -533,9 +585,24 @@ class FontBcapCobottaWriter:
             RuntimeError: 現在 P 座標を取得できない場合、または取得値が 6 要素でない
                 場合。
         """
+        # write() で明示された値を、インスタンスに設定された既定値より優先する。
+        if start_height_mm is None:
+            start_height_mm = self._start_height_mm
+        else:
+            start_height_mm = float(start_height_mm)
+
+        if return_to_start is None:
+            return_to_start = self._return_to_start
+        else:
+            return_to_start = bool(return_to_start)
+
+        if new_line is None:
+            new_line = self._new_line
+        else:
+            new_line = bool(new_line)
+
         # ロボットへ接続・準備する前に、ロボット状態と無関係な入力値を検証する。
         # 空文字列であっても、負の高さ指定は呼び出し条件の誤りとして扱う。
-        start_height_mm = float(start_height_mm)
         if start_height_mm < 0.0:
             raise ValueError("start_height_mm は 0.0 以上で指定してください。")
 

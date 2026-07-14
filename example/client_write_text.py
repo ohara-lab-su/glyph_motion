@@ -82,6 +82,8 @@ def main() -> None:
 
     client.set_timeout(90)
 
+    # client.set_pen_lift_mm = (2.0)
+
     result = client.write(
         # 書字する文字列。
         text="島根大学 尾原研究室",
