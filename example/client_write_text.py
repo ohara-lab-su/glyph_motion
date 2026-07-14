@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """COBOTTA 文字書字 ese774_frame 同期クライアント例。"""
+import time
 
 from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 
@@ -7,9 +8,9 @@ from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 SERVER_IP = "10.170.10.38"  # server2
 # SERVER_IP = "10.170.10.41" # server3
 SERVER_PORT = 8000
-TEXT = "島根大学"
+# TEXT = "島根大学"
 # TEXT = "島根大学材料エネルギー学部"
-# TEXT = "島根大学 尾原研究室"
+TEXT = "島根大学 尾原研究室"
 
 
 def main() -> None:
@@ -76,11 +77,13 @@ def main() -> None:
         decel=100,
     )
 
+    time.sleep(3)
+
     result = client.write(
         # 書字する文字列。
         text=TEXT,
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=1.7,
+        start_height_mm=2.4,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
