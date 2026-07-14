@@ -165,6 +165,11 @@ class FontBcapCobottaWriter:
         self._arm_taken = False
         self._write_in_progress = False
         self._emergency_pen_up_z = None
+        self._document_origin = None
+        self._document_surface_z = None
+        self._cursor_x = 0.0
+        self._cursor_y = 0.0
+        self._has_written = False
 
         self._layout = FontLineLayout(
             kanjivg_directory=config.kanjivg_directory,
@@ -223,6 +228,11 @@ class FontBcapCobottaWriter:
             return False
 
         self._connected = False
+        self._document_origin = None
+        self._document_surface_z = None
+        self._cursor_x = 0.0
+        self._cursor_y = 0.0
+        self._has_written = False
         return True
 
     def reset_error(self):
@@ -490,6 +500,7 @@ class FontBcapCobottaWriter:
         text: str,
         start_height_mm: float = 0.0,
         return_to_start: bool = True,
+        new_line: bool = False,
     ) -> bool:
         """一行の文字列をロボットで書字する。
 
@@ -508,6 +519,10 @@ class FontBcapCobottaWriter:
             start_height_mm: ``write()`` 開始位置が書字面より高い量 [mm]。
                 ``0.0`` の場合は開始位置を書字面とみなす。
             return_to_start: 書字終了後に ``write()`` 開始姿勢へ戻るか。
+                次回の論理的な書字位置には影響しない。
+            new_line: 既に書字済みの場合、今回の文字列を次の行または次の列から
+                書き始めるか。``False`` の場合は、前回の文字列に続く次文字セルを
+                今回の書字原点とする。
 
         Returns:
             全筆画の書字と、指定された復帰動作に成功した場合は ``True``。
@@ -533,12 +548,40 @@ class FontBcapCobottaWriter:
         if len(strokes) == 0:
             return True
 
-        # 呼び出し時の姿勢を、座標変換の原点と終了時の復帰先の両方に使用する。
+        # 呼び出し時の姿勢は、今回の物理的な復帰先として保持する。
         start_pose = self._read_pose()
-        workspace_origin = list(start_pose)
 
-        # 書字面とペン上げ位置は、開始姿勢を基準に一度だけ決定する。
-        surface_z = float(start_pose[2]) - start_height_mm
+        # 最初の write() 呼び出し時の姿勢を書字全体の原点として保持する。
+        # return_to_start は物理的な復帰だけを制御し、次回の論理書字位置には
+        # 影響させない。
+        if self._document_origin is None:
+            self._document_origin = list(start_pose)
+            self._document_surface_z = float(start_pose[2]) - start_height_mm
+
+        # 改行指定は、前回までに書字がある場合だけ今回の開始位置へ適用する。
+        if new_line and self._has_written:
+            if self.config.writing_direction == "vertical":
+                self._cursor_x += self.config.cell_width
+            else:
+                self._cursor_y += self.config.cell_height
+
+            if self.config.writing_direction == "vertical":
+                self._cursor_y = 0.0
+            else:
+                self._cursor_x = 0.0
+
+        workspace_origin = list(self._document_origin)
+        cursor_point = FontPoint(
+            x=self._cursor_x,
+            y=self._cursor_y,
+        )
+        workspace_origin = self._point_to_pose(
+            workspace_origin=workspace_origin,
+            point=cursor_point,
+            target_z=float(self._document_surface_z),
+        )
+
+        surface_z = float(self._document_surface_z)
         pen_up_z = surface_z + self.config.pen_lift_mm
 
         # 書字途中で失敗した場合に、明示的な緊急退避で使用する高さを保持する。
@@ -639,6 +682,21 @@ class FontBcapCobottaWriter:
             ):
                 return False
 
+        # 次回の write() が改行しない場合に使用する論理カーソルを、
+        # 実際の最終筆画点ではなく次文字セルの原点へ進める。
+        character_count = len(text)
+        if self.config.writing_direction == "vertical":
+            if self.config.vertical_direction == "bottom_to_top":
+                self._cursor_y -= character_count * self.config.cell_height
+            else:
+                self._cursor_y += character_count * self.config.cell_height
+        else:
+            if self.config.line_direction == "right_to_left":
+                self._cursor_x -= character_count * self.config.cell_width
+            else:
+                self._cursor_x += character_count * self.config.cell_width
+
+        self._has_written = True
         self._write_in_progress = False
         self._emergency_pen_up_z = None
         return True

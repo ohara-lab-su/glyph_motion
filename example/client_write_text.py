@@ -80,6 +80,8 @@ def main() -> None:
 
     time.sleep(3)
 
+    client.set_timeout(90)
+
     result = client.write(
         # 書字する文字列。
         text="島根大学 尾原研究室",
