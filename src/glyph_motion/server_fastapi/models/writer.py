@@ -48,7 +48,10 @@ class SetParamsRequest(BaseModel):
     cell_height: Optional[float] = None
     character_height: Optional[float] = None
     curve_division: Optional[int] = None
+    start_height_mm: Optional[float] = None
     pen_lift_mm: Optional[float] = None
+    return_to_start: Optional[bool] = None
+    new_line: Optional[bool] = None
     robot_x_sign: Optional[float] = None
     robot_y_sign: Optional[float] = None
     robot_swap_xy: Optional[bool] = None

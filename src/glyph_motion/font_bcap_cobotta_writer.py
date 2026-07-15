@@ -361,7 +361,10 @@ class FontBcapCobottaWriter:
         cell_height: Optional[float] = None,
         character_height: Optional[float] = None,
         curve_division: Optional[int] = None,
+        start_height_mm: Optional[float] = None,
         pen_lift_mm: Optional[float] = None,
+        return_to_start: Optional[bool] = None,
+        new_line: Optional[bool] = None,
         robot_x_sign: Optional[float] = None,
         robot_y_sign: Optional[float] = None,
         robot_swap_xy: Optional[bool] = None,
@@ -393,7 +396,10 @@ class FontBcapCobottaWriter:
             cell_height: 新しい文字セル高さ [mm]。
             character_height: 新しい文字高さ [mm]。
             curve_division: 新しいベジェ曲線分割数。
+            start_height_mm: ``write()`` 開始位置が書字面より高い量の既定値 [mm]。
             pen_lift_mm: 新しいペン退避高さ [mm]。
+            return_to_start: ``write()`` 終了後に開始姿勢へ戻る既定値。
+            new_line: 二回目以降の ``write()`` で改行する既定値。
             robot_x_sign: 文字 X 座標へ適用する新しい符号。
             robot_y_sign: 文字 Y 座標へ適用する新しい符号。
             robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
@@ -544,8 +550,25 @@ class FontBcapCobottaWriter:
         self.config.mirror_horizontal = new_mirror_horizontal
         self.config.mirror_vertical = new_mirror_vertical
 
+        if start_height_mm is not None:
+            start_height_mm = float(start_height_mm)
+            if start_height_mm < 0.0:
+                raise ValueError(
+                    "start_height_mm は 0.0 以上で指定してください。"
+                )
+            self._start_height_mm = start_height_mm
+
         if pen_lift_mm is not None:
-            self.config.pen_lift_mm = float(pen_lift_mm)
+            pen_lift_mm = float(pen_lift_mm)
+            if pen_lift_mm < 0.0:
+                raise ValueError("pen_lift_mm は 0.0 以上で指定してください。")
+            self.config.pen_lift_mm = pen_lift_mm
+
+        if return_to_start is not None:
+            self._return_to_start = bool(return_to_start)
+
+        if new_line is not None:
+            self._new_line = bool(new_line)
 
         if robot_x_sign is not None:
             self.config.robot_x_sign = float(robot_x_sign)

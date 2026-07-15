@@ -86,7 +86,7 @@ def main() -> None:
         # 書字する文字列。
         text="島根大学 尾原研究室",
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.0,
+        start_height_mm=1.0,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
@@ -96,7 +96,7 @@ def main() -> None:
         # 書字する文字列。
         text="材料エネルギー学部",
         # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.0,
+        start_height_mm=1.0,
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
