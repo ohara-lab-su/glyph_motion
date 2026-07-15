@@ -81,7 +81,7 @@ def main() -> None:
     time.sleep(3)
 
     client.set_timeout(90)
-    client.set_pen_lift_mm(2.0)
+    # client.set_pen_lift_mm(2.0)
     client.set_return_to_start(True)
     client.set_new_line(True)
 
