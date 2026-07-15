@@ -9,8 +9,33 @@ class WriteRequest(BaseModel):
     """一行書字リクエスト。"""
 
     text: str
-    start_height_mm: float = 0.0
-    return_to_start: bool = True
+    start_height_mm: Optional[float] = None
+    return_to_start: Optional[bool] = None
+    new_line: Optional[bool] = None
+
+
+class SetStartHeightMmRequest(BaseModel):
+    """既定の書字開始高さ設定リクエスト。"""
+
+    start_height_mm: float
+
+
+class SetPenLiftMmRequest(BaseModel):
+    """ペン退避高さ設定リクエスト。"""
+
+    pen_lift_mm: float
+
+
+class SetReturnToStartRequest(BaseModel):
+    """既定の原点復帰設定リクエスト。"""
+
+    return_to_start: bool
+
+
+class SetNewLineRequest(BaseModel):
+    """既定の改行設定リクエスト。"""
+
+    new_line: bool
 
 
 class SetParamsRequest(BaseModel):
