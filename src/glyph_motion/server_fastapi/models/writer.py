@@ -55,6 +55,8 @@ class SetParamsRequest(BaseModel):
     line_direction: Optional[str] = None
     writing_direction: Optional[str] = None
     vertical_direction: Optional[str] = None
+    horizontal_new_line_direction: Optional[str] = None
+    vertical_new_line_direction: Optional[str] = None
     mirror_horizontal: Optional[bool] = None
     mirror_vertical: Optional[bool] = None
     drawing_speed: Optional[int] = None
