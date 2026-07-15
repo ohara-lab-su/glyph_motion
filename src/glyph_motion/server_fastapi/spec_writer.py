@@ -4,7 +4,11 @@ from ese774_frame.models.api_spec import ApiSpec
 
 from glyph_motion.server_fastapi.models.common import ResultResponse
 from glyph_motion.server_fastapi.models.writer import (
+    SetNewLineRequest,
     SetParamsRequest,
+    SetPenLiftMmRequest,
+    SetReturnToStartRequest,
+    SetStartHeightMmRequest,
     WriteRequest,
 )
 
@@ -81,6 +85,42 @@ cobotta_writer_api_spec = [
         method="post",
         description="設定済みの減速度をロボットへ反映する",
         summary="Set decel",
+    ),
+    ApiSpec(
+        name="set_start_height_mm",
+        object_name="cobotta_writer",
+        request_model=SetStartHeightMmRequest,
+        response_model=ResultResponse,
+        method="post",
+        description="write の既定の書字開始高さを設定する",
+        summary="Set start height",
+    ),
+    ApiSpec(
+        name="set_pen_lift_mm",
+        object_name="cobotta_writer",
+        request_model=SetPenLiftMmRequest,
+        response_model=ResultResponse,
+        method="post",
+        description="筆画間および書字終了時のペン退避高さを設定する",
+        summary="Set pen lift",
+    ),
+    ApiSpec(
+        name="set_return_to_start",
+        object_name="cobotta_writer",
+        request_model=SetReturnToStartRequest,
+        response_model=ResultResponse,
+        method="post",
+        description="write 終了後の原点復帰動作の既定値を設定する",
+        summary="Set return to start",
+    ),
+    ApiSpec(
+        name="set_new_line",
+        object_name="cobotta_writer",
+        request_model=SetNewLineRequest,
+        response_model=ResultResponse,
+        method="post",
+        description="次回以降の write で改行するかの既定値を設定する",
+        summary="Set new line",
     ),
     ApiSpec(
         name="set_params",

@@ -56,6 +56,12 @@ class FontBcapCobottaWriterConfig:
         line_direction: 横書き時に文字を並べる方向。
         writing_direction: 横書きまたは縦書きの指定。
         vertical_direction: 縦書き時に文字を並べる方向。
+        horizontal_new_line_direction: 横書き時に次の行へ送る方向。
+            ``None`` の場合は、上下反転なしで上から下、上下反転ありで下から上。
+            この文字座標系では上から下を ``+Y`` として扱う。
+        vertical_new_line_direction: 縦書き時に次の列へ送る方向。
+            ``None`` の場合は、左右反転なしで右から左、左右反転ありで左から右。
+            この文字座標系では右から左を ``+X`` として扱う。
         mirror_horizontal: 文字を左右反転するか。
         mirror_vertical: 文字を上下反転するか。
         drawing_speed: 筆画を描画する際の速度設定。
@@ -92,6 +98,10 @@ class FontBcapCobottaWriterConfig:
         writing_direction="horizontal",
         # 縦書き時の進行方向
         vertical_direction="top_to_bottom",
+        # 横書き時の改行方向。None の場合は mirror_vertical から自動決定する。
+        horizontal_new_line_direction=None,
+        # 縦書き時の改列方向。None の場合は mirror_horizontal から自動決定する。
+        vertical_new_line_direction=None,
         # 文字の左右反転
         mirror_horizontal=False,
         # 文字の上下反転
@@ -121,6 +131,34 @@ class FontBcapCobottaWriterConfig:
         self.line_direction = str(line_direction)
         self.writing_direction = str(writing_direction)
         self.vertical_direction = str(vertical_direction)
+        if horizontal_new_line_direction is None:
+            self.horizontal_new_line_direction = None
+        else:
+            self.horizontal_new_line_direction = str(
+                horizontal_new_line_direction
+            )
+            if self.horizontal_new_line_direction not in (
+                "top_to_bottom",
+                "bottom_to_top",
+            ):
+                raise ValueError(
+                    "horizontal_new_line_direction は "
+                    "top_to_bottom または bottom_to_top を指定してください。"
+                )
+
+        if vertical_new_line_direction is None:
+            self.vertical_new_line_direction = None
+        else:
+            self.vertical_new_line_direction = str(vertical_new_line_direction)
+            if self.vertical_new_line_direction not in (
+                "left_to_right",
+                "right_to_left",
+            ):
+                raise ValueError(
+                    "vertical_new_line_direction は "
+                    "left_to_right または right_to_left を指定してください。"
+                )
+
         self.mirror_horizontal = bool(mirror_horizontal)
         self.mirror_vertical = bool(mirror_vertical)
         self.drawing_speed = int(drawing_speed)
@@ -165,6 +203,14 @@ class FontBcapCobottaWriter:
         self._arm_taken = False
         self._write_in_progress = False
         self._emergency_pen_up_z = None
+        self._document_origin = None
+        self._document_surface_z = None
+        self._cursor_x = 0.0
+        self._cursor_y = 0.0
+        self._has_written = False
+        self._start_height_mm = 0.0
+        self._return_to_start = True
+        self._new_line = False
 
         self._layout = FontLineLayout(
             kanjivg_directory=config.kanjivg_directory,
@@ -223,6 +269,11 @@ class FontBcapCobottaWriter:
             return False
 
         self._connected = False
+        self._document_origin = None
+        self._document_surface_z = None
+        self._cursor_x = 0.0
+        self._cursor_y = 0.0
+        self._has_written = False
         return True
 
     def reset_error(self):
@@ -310,13 +361,18 @@ class FontBcapCobottaWriter:
         cell_height: Optional[float] = None,
         character_height: Optional[float] = None,
         curve_division: Optional[int] = None,
+        start_height_mm: Optional[float] = None,
         pen_lift_mm: Optional[float] = None,
+        return_to_start: Optional[bool] = None,
+        new_line: Optional[bool] = None,
         robot_x_sign: Optional[float] = None,
         robot_y_sign: Optional[float] = None,
         robot_swap_xy: Optional[bool] = None,
         line_direction: Optional[str] = None,
         writing_direction: Optional[str] = None,
         vertical_direction: Optional[str] = None,
+        horizontal_new_line_direction: Optional[str] = None,
+        vertical_new_line_direction: Optional[str] = None,
         mirror_horizontal: Optional[bool] = None,
         mirror_vertical: Optional[bool] = None,
         drawing_speed: Optional[int] = None,
@@ -340,13 +396,22 @@ class FontBcapCobottaWriter:
             cell_height: 新しい文字セル高さ [mm]。
             character_height: 新しい文字高さ [mm]。
             curve_division: 新しいベジェ曲線分割数。
+            start_height_mm: ``write()`` 開始位置が書字面より高い量の既定値 [mm]。
             pen_lift_mm: 新しいペン退避高さ [mm]。
+            return_to_start: ``write()`` 終了後に開始姿勢へ戻る既定値。
+            new_line: 二回目以降の ``write()`` で改行する既定値。
             robot_x_sign: 文字 X 座標へ適用する新しい符号。
             robot_y_sign: 文字 Y 座標へ適用する新しい符号。
             robot_swap_xy: 文字座標の X 軸と Y 軸を交換するか。
             line_direction: 横書き時の新しい進行方向。
             writing_direction: 新しい書字方向。
             vertical_direction: 縦書き時の新しい進行方向。
+            horizontal_new_line_direction: 横書き時の新しい改行方向。
+                省略時は現在値を維持する。設定値が ``None`` の場合は
+                ``mirror_vertical`` から自動決定する。
+            vertical_new_line_direction: 縦書き時の新しい改列方向。
+                省略時は現在値を維持する。設定値が ``None`` の場合は
+                ``mirror_horizontal`` から自動決定する。
             mirror_horizontal: 左右反転を有効にするか。
             mirror_vertical: 上下反転を有効にするか。
             drawing_speed: 新しい描画速度。
@@ -371,6 +436,10 @@ class FontBcapCobottaWriter:
         new_line_direction = self.config.line_direction
         new_writing_direction = self.config.writing_direction
         new_vertical_direction = self.config.vertical_direction
+        new_horizontal_new_line_direction = (
+            self.config.horizontal_new_line_direction
+        )
+        new_vertical_new_line_direction = self.config.vertical_new_line_direction
         new_mirror_horizontal = self.config.mirror_horizontal
         new_mirror_vertical = self.config.mirror_vertical
 
@@ -414,6 +483,30 @@ class FontBcapCobottaWriter:
             new_vertical_direction = str(vertical_direction)
             layout_changed = True
 
+        if horizontal_new_line_direction is not None:
+            new_horizontal_new_line_direction = str(
+                horizontal_new_line_direction
+            )
+            if new_horizontal_new_line_direction not in (
+                "top_to_bottom",
+                "bottom_to_top",
+            ):
+                raise ValueError(
+                    "horizontal_new_line_direction は "
+                    "top_to_bottom または bottom_to_top を指定してください。"
+                )
+
+        if vertical_new_line_direction is not None:
+            new_vertical_new_line_direction = str(vertical_new_line_direction)
+            if new_vertical_new_line_direction not in (
+                "left_to_right",
+                "right_to_left",
+            ):
+                raise ValueError(
+                    "vertical_new_line_direction は "
+                    "left_to_right または right_to_left を指定してください。"
+                )
+
         if mirror_horizontal is not None:
             new_mirror_horizontal = bool(mirror_horizontal)
             layout_changed = True
@@ -450,11 +543,32 @@ class FontBcapCobottaWriter:
         self.config.line_direction = new_line_direction
         self.config.writing_direction = new_writing_direction
         self.config.vertical_direction = new_vertical_direction
+        self.config.horizontal_new_line_direction = (
+            new_horizontal_new_line_direction
+        )
+        self.config.vertical_new_line_direction = new_vertical_new_line_direction
         self.config.mirror_horizontal = new_mirror_horizontal
         self.config.mirror_vertical = new_mirror_vertical
 
+        if start_height_mm is not None:
+            start_height_mm = float(start_height_mm)
+            if start_height_mm < 0.0:
+                raise ValueError(
+                    "start_height_mm は 0.0 以上で指定してください。"
+                )
+            self._start_height_mm = start_height_mm
+
         if pen_lift_mm is not None:
-            self.config.pen_lift_mm = float(pen_lift_mm)
+            pen_lift_mm = float(pen_lift_mm)
+            if pen_lift_mm < 0.0:
+                raise ValueError("pen_lift_mm は 0.0 以上で指定してください。")
+            self.config.pen_lift_mm = pen_lift_mm
+
+        if return_to_start is not None:
+            self._return_to_start = bool(return_to_start)
+
+        if new_line is not None:
+            self._new_line = bool(new_line)
 
         if robot_x_sign is not None:
             self.config.robot_x_sign = float(robot_x_sign)
@@ -485,11 +599,79 @@ class FontBcapCobottaWriter:
 
         return True
 
+    def set_pen_lift_mm(self, pen_lift_mm: float) -> bool:
+        """書字面からのペン退避高さを設定する。
+
+        Args:
+            pen_lift_mm: 筆画間および書字終了時のペン上げ高さ [mm]。
+                文字列として渡された数値も受け付ける。
+
+        Returns:
+            設定に成功した場合は ``True``。
+
+        Raises:
+            ValueError: ``pen_lift_mm`` が負の場合。
+        """
+        pen_lift_mm = float(pen_lift_mm)
+        if pen_lift_mm < 0.0:
+            raise ValueError("pen_lift_mm は 0.0 以上で指定してください。")
+
+        self.config.pen_lift_mm = pen_lift_mm
+        return True
+
+    def set_start_height_mm(self, start_height_mm: float) -> bool:
+        """``write()`` の既定の書字開始高さを設定する。
+
+        Args:
+            start_height_mm: 書字開始位置が書字面より高い量 [mm]。
+                文字列として渡された数値も受け付ける。
+
+        Returns:
+            設定に成功した場合は ``True``。
+
+        Raises:
+            ValueError: ``start_height_mm`` が負の場合。
+        """
+        start_height_mm = float(start_height_mm)
+        if start_height_mm < 0.0:
+            raise ValueError("start_height_mm は 0.0 以上で指定してください。")
+
+        self._start_height_mm = start_height_mm
+        return True
+
+    def set_return_to_start(self, return_to_start: bool) -> bool:
+        """``write()`` 終了後の原点復帰動作の既定値を設定する。
+
+        Args:
+            return_to_start: 原点へ復帰する場合は ``True``。
+
+        Returns:
+            設定に成功した場合は ``True``。
+        """
+        self._return_to_start = bool(return_to_start)
+        return True
+
+    def set_new_line(self, new_line: bool) -> bool:
+        """次回以降の ``write()`` で改行するかの既定値を設定する。
+
+        最初の ``write()`` では改行せず、二回目以降の呼び出しで適用する。
+
+        Args:
+            new_line: 前回の文字列の次行または次列から書く場合は ``True``。
+                ``False`` の場合は前回の次文字セルから続けて書く。
+
+        Returns:
+            設定に成功した場合は ``True``。
+        """
+        self._new_line = bool(new_line)
+        return True
+
     def write(
         self,
         text: str,
-        start_height_mm: float = 0.0,
-        return_to_start: bool = True,
+        start_height_mm: Optional[float] = None,
+        return_to_start: Optional[bool] = None,
+        new_line: Optional[bool] = None,
     ) -> bool:
         """一行の文字列をロボットで書字する。
 
@@ -506,8 +688,14 @@ class FontBcapCobottaWriter:
         Args:
             text: 書く文字列。
             start_height_mm: ``write()`` 開始位置が書字面より高い量 [mm]。
-                ``0.0`` の場合は開始位置を書字面とみなす。
+                ``None`` の場合は :meth:`set_start_height_mm` の設定値を使用する。
             return_to_start: 書字終了後に ``write()`` 開始姿勢へ戻るか。
+                ``None`` の場合は :meth:`set_return_to_start` の設定値を使用する。
+                次回の論理的な書字位置には影響しない。
+            new_line: 既に書字済みの場合、今回の文字列を次の行または次の列から
+                書き始めるか。``None`` の場合は :meth:`set_new_line` の設定値を
+                使用する。``False`` の場合は、前回の文字列に続く次文字セルを
+                今回の書字原点とする。
 
         Returns:
             全筆画の書字と、指定された復帰動作に成功した場合は ``True``。
@@ -518,9 +706,24 @@ class FontBcapCobottaWriter:
             RuntimeError: 現在 P 座標を取得できない場合、または取得値が 6 要素でない
                 場合。
         """
+        # write() で明示された値を、インスタンスに設定された既定値より優先する。
+        if start_height_mm is None:
+            start_height_mm = self._start_height_mm
+        else:
+            start_height_mm = float(start_height_mm)
+
+        if return_to_start is None:
+            return_to_start = self._return_to_start
+        else:
+            return_to_start = bool(return_to_start)
+
+        if new_line is None:
+            new_line = self._new_line
+        else:
+            new_line = bool(new_line)
+
         # ロボットへ接続・準備する前に、ロボット状態と無関係な入力値を検証する。
         # 空文字列であっても、負の高さ指定は呼び出し条件の誤りとして扱う。
-        start_height_mm = float(start_height_mm)
         if start_height_mm < 0.0:
             raise ValueError("start_height_mm は 0.0 以上で指定してください。")
 
@@ -533,12 +736,63 @@ class FontBcapCobottaWriter:
         if len(strokes) == 0:
             return True
 
-        # 呼び出し時の姿勢を、座標変換の原点と終了時の復帰先の両方に使用する。
+        # 呼び出し時の姿勢は、今回の物理的な復帰先として保持する。
         start_pose = self._read_pose()
-        workspace_origin = list(start_pose)
 
-        # 書字面とペン上げ位置は、開始姿勢を基準に一度だけ決定する。
-        surface_z = float(start_pose[2]) - start_height_mm
+        # 最初の write() 呼び出し時の姿勢を書字全体の原点として保持する。
+        # return_to_start は物理的な復帰だけを制御し、次回の論理書字位置には
+        # 影響させない。
+        if self._document_origin is None:
+            self._document_origin = list(start_pose)
+            self._document_surface_z = float(start_pose[2]) - start_height_mm
+
+        # 改行指定は、前回までに書字がある場合だけ今回の開始位置へ適用する。
+        if new_line and self._has_written:
+            if self.config.writing_direction == "vertical":
+                self._cursor_y = 0.0
+
+                vertical_new_line_direction = (
+                    self.config.vertical_new_line_direction
+                )
+                if vertical_new_line_direction is None:
+                    if self.config.mirror_horizontal:
+                        vertical_new_line_direction = "left_to_right"
+                    else:
+                        vertical_new_line_direction = "right_to_left"
+
+                if vertical_new_line_direction == "right_to_left":
+                    self._cursor_x += self.config.cell_width
+                else:
+                    self._cursor_x -= self.config.cell_width
+            else:
+                self._cursor_x = 0.0
+
+                horizontal_new_line_direction = (
+                    self.config.horizontal_new_line_direction
+                )
+                if horizontal_new_line_direction is None:
+                    if self.config.mirror_vertical:
+                        horizontal_new_line_direction = "bottom_to_top"
+                    else:
+                        horizontal_new_line_direction = "top_to_bottom"
+
+                if horizontal_new_line_direction == "top_to_bottom":
+                    self._cursor_y += self.config.cell_height
+                else:
+                    self._cursor_y -= self.config.cell_height
+
+        workspace_origin = list(self._document_origin)
+        cursor_point = FontPoint(
+            x=self._cursor_x,
+            y=self._cursor_y,
+        )
+        workspace_origin = self._point_to_pose(
+            workspace_origin=workspace_origin,
+            point=cursor_point,
+            target_z=float(self._document_surface_z),
+        )
+
+        surface_z = float(self._document_surface_z)
         pen_up_z = surface_z + self.config.pen_lift_mm
 
         # 書字途中で失敗した場合に、明示的な緊急退避で使用する高さを保持する。
@@ -639,6 +893,21 @@ class FontBcapCobottaWriter:
             ):
                 return False
 
+        # 次回の write() が改行しない場合に使用する論理カーソルを、
+        # 実際の最終筆画点ではなく次文字セルの原点へ進める。
+        character_count = len(text)
+        if self.config.writing_direction == "vertical":
+            if self.config.vertical_direction == "top_to_bottom":
+                self._cursor_y -= character_count * self.config.cell_height
+            else:
+                self._cursor_y += character_count * self.config.cell_height
+        else:
+            if self.config.line_direction == "right_to_left":
+                self._cursor_x -= character_count * self.config.cell_width
+            else:
+                self._cursor_x += character_count * self.config.cell_width
+
+        self._has_written = True
         self._write_in_progress = False
         self._emergency_pen_up_z = None
         return True
@@ -980,6 +1249,14 @@ def main():
         # 縦書き時の文字進行方向。横書き時には使用しない。
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
+        # 横書き時の改行方向。None の場合は mirror_vertical から自動決定する。
+        horizontal_new_line_direction=None,
+        # horizontal_new_line_direction="top_to_bottom",
+        # horizontal_new_line_direction="bottom_to_top",
+        # 縦書き時の改列方向。None の場合は mirror_horizontal から自動決定する。
+        vertical_new_line_direction=None,
+        # vertical_new_line_direction="right_to_left",
+        # vertical_new_line_direction="left_to_right",
         # 各文字をセル内で左右反転するかどうか。
         # mirror_horizontal=False,
         mirror_horizontal=True,
