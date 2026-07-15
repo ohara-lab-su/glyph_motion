@@ -58,8 +58,10 @@ class FontBcapCobottaWriterConfig:
         vertical_direction: 縦書き時に文字を並べる方向。
         horizontal_new_line_direction: 横書き時に次の行へ送る方向。
             ``None`` の場合は、上下反転なしで上から下、上下反転ありで下から上。
+            この文字座標系では上から下を ``+Y`` として扱う。
         vertical_new_line_direction: 縦書き時に次の列へ送る方向。
             ``None`` の場合は、左右反転なしで右から左、左右反転ありで左から右。
+            この文字座標系では右から左を ``+X`` として扱う。
         mirror_horizontal: 文字を左右反転するか。
         mirror_vertical: 文字を上下反転するか。
         drawing_speed: 筆画を描画する際の速度設定。
@@ -736,9 +738,9 @@ class FontBcapCobottaWriter:
                         vertical_new_line_direction = "right_to_left"
 
                 if vertical_new_line_direction == "right_to_left":
-                    self._cursor_x -= self.config.cell_width
-                else:
                     self._cursor_x += self.config.cell_width
+                else:
+                    self._cursor_x -= self.config.cell_width
             else:
                 self._cursor_x = 0.0
 
@@ -752,9 +754,9 @@ class FontBcapCobottaWriter:
                         horizontal_new_line_direction = "top_to_bottom"
 
                 if horizontal_new_line_direction == "top_to_bottom":
-                    self._cursor_y -= self.config.cell_height
-                else:
                     self._cursor_y += self.config.cell_height
+                else:
+                    self._cursor_y -= self.config.cell_height
 
         workspace_origin = list(self._document_origin)
         cursor_point = FontPoint(
