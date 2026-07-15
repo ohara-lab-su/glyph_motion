@@ -2,6 +2,7 @@
 
 `glyph_motion` は、フォントまたは KanjiVG 由来の筆順付きストロークをロボット書字用の移動命令へ変換し、COBOTTA b-CAP または ese774_frame 経由で実行するためのライブラリである。
 
+
 ## 構成
 
 ```text
