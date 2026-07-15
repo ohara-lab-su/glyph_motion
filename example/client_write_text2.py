@@ -57,6 +57,11 @@ def main() -> None:
         # 文字列を横書きまたは縦書きのどちらで配置するか。
         writing_direction="horizontal",
         # writing_direction="vertical",
+        # 改行するときの向き
+        # horizontal_new_line_direction="top_to_bottom",
+        horizontal_new_line_direction="bottom_to_top",
+        # vertical_new_line_direction="right_to_left",
+        # vertical_new_line_direction="left_to_right",
         # 縦書き時の文字進行方向。横書き時には使用しない。
         vertical_direction="top_to_bottom",
         # vertical_direction="bottom_to_top",
@@ -81,7 +86,8 @@ def main() -> None:
     time.sleep(3)
 
     client.set_timeout(90)
-    client.set_pen_lift_mm(1.0)
+    client.set_pen_lift_mm(2.2)
+    client.set_start_height_mm(2.2)
     client.set_return_to_start(True)
     client.set_new_line(True)
 
