@@ -91,8 +91,10 @@ def main() -> None:
     client.set_return_to_start(True)
     client.set_new_line(True)
 
-    client.write("島根大学 尾原研究室")
+    client.write("島根大学")
     client.write("材料エネルギー学部")
+    client.write("尾原研究室")
+    client.write("xxxx")
 
     client.give_arm()
     client.disconnect()
