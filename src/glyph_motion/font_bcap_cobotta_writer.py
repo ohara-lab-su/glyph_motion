@@ -498,6 +498,26 @@ class FontBcapCobottaWriter:
 
         return True
 
+    def set_pen_lift_mm(self, pen_lift_mm: float) -> bool:
+        """書字面からのペン退避高さを設定する。
+
+        Args:
+            pen_lift_mm: 筆画間および書字終了時のペン上げ高さ [mm]。
+                文字列として渡された数値も受け付ける。
+
+        Returns:
+            設定に成功した場合は ``True``。
+
+        Raises:
+            ValueError: ``pen_lift_mm`` が負の場合。
+        """
+        pen_lift_mm = float(pen_lift_mm)
+        if pen_lift_mm < 0.0:
+            raise ValueError("pen_lift_mm は 0.0 以上で指定してください。")
+
+        self.config.pen_lift_mm = pen_lift_mm
+        return True
+
     def set_start_height_mm(self, start_height_mm: float) -> bool:
         """``write()`` の既定の書字開始高さを設定する。
 

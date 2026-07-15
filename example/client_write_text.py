@@ -82,8 +82,6 @@ def main() -> None:
 
     client.set_timeout(90)
 
-    # client.set_pen_lift_mm = (2.0)
-
     result = client.write(
         # 書字する文字列。
         text="島根大学 尾原研究室",
@@ -92,6 +90,8 @@ def main() -> None:
         # 書字完了後に開始位置へ戻るかどうか。
         return_to_start=True,
     )
+    print(result)
+
     result = client.write(
         # 書字する文字列。
         text="材料エネルギー学部",

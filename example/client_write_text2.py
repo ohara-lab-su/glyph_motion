@@ -81,26 +81,12 @@ def main() -> None:
     time.sleep(3)
 
     client.set_timeout(90)
+    client.set_pen_lift_mm(2.0)
+    client.set_return_to_start(True)
+    client.set_new_line(True)
 
-    # client.set_pen_lift_mm = (2.0)
-
-    result = client.write(
-        # 書字する文字列。
-        text="島根大学 尾原研究室",
-        # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.0,
-        # 書字完了後に開始位置へ戻るかどうか。
-        return_to_start=True,
-    )
-    result = client.write(
-        # 書字する文字列。
-        text="材料エネルギー学部",
-        # 書字開始位置から書字面までペンを下げる距離（mm）。
-        start_height_mm=2.0,
-        # 書字完了後に開始位置へ戻るかどうか。
-        return_to_start=True,
-    )
-    print(result)
+    client.write("島根大学 尾原研究室")
+    client.write("材料エネルギー学部")
 
     client.give_arm()
     client.disconnect()
