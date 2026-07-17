@@ -21,7 +21,6 @@ Notes:
       ``start_height_mm`` から決定する。
 """
 
-import logging
 from pathlib import Path
 from typing import Any, List, Optional, Sequence
 
@@ -30,6 +29,8 @@ from glyph_motion.font_line_layout import FontLineLayout
 from glyph_motion.font_line_layout import PositionedCharacter
 from glyph_motion.lib.font_geometry import FontPoint
 from glyph_motion.lib.font_geometry import FontStrokePath
+
+from x_logger import XLogger
 
 
 class FontBcapCobottaWriterConfig:
@@ -134,9 +135,7 @@ class FontBcapCobottaWriterConfig:
         if horizontal_new_line_direction is None:
             self.horizontal_new_line_direction = None
         else:
-            self.horizontal_new_line_direction = str(
-                horizontal_new_line_direction
-            )
+            self.horizontal_new_line_direction = str(horizontal_new_line_direction)
             if self.horizontal_new_line_direction not in (
                 "top_to_bottom",
                 "bottom_to_top",
@@ -192,8 +191,10 @@ class FontBcapCobottaWriter:
         logger=None,
     ):
         if logger is None:
-            logging.basicConfig(level=logging.INFO)
-            logger = logging.getLogger(__name__)
+            logger = XLogger(
+                log_level="info",
+                logger_name=__name__,
+            )
 
         self.config = config
         self._logger = logger
@@ -436,9 +437,7 @@ class FontBcapCobottaWriter:
         new_line_direction = self.config.line_direction
         new_writing_direction = self.config.writing_direction
         new_vertical_direction = self.config.vertical_direction
-        new_horizontal_new_line_direction = (
-            self.config.horizontal_new_line_direction
-        )
+        new_horizontal_new_line_direction = self.config.horizontal_new_line_direction
         new_vertical_new_line_direction = self.config.vertical_new_line_direction
         new_mirror_horizontal = self.config.mirror_horizontal
         new_mirror_vertical = self.config.mirror_vertical
@@ -484,9 +483,7 @@ class FontBcapCobottaWriter:
             layout_changed = True
 
         if horizontal_new_line_direction is not None:
-            new_horizontal_new_line_direction = str(
-                horizontal_new_line_direction
-            )
+            new_horizontal_new_line_direction = str(horizontal_new_line_direction)
             if new_horizontal_new_line_direction not in (
                 "top_to_bottom",
                 "bottom_to_top",
@@ -543,9 +540,7 @@ class FontBcapCobottaWriter:
         self.config.line_direction = new_line_direction
         self.config.writing_direction = new_writing_direction
         self.config.vertical_direction = new_vertical_direction
-        self.config.horizontal_new_line_direction = (
-            new_horizontal_new_line_direction
-        )
+        self.config.horizontal_new_line_direction = new_horizontal_new_line_direction
         self.config.vertical_new_line_direction = new_vertical_new_line_direction
         self.config.mirror_horizontal = new_mirror_horizontal
         self.config.mirror_vertical = new_mirror_vertical
@@ -553,9 +548,7 @@ class FontBcapCobottaWriter:
         if start_height_mm is not None:
             start_height_mm = float(start_height_mm)
             if start_height_mm < 0.0:
-                raise ValueError(
-                    "start_height_mm は 0.0 以上で指定してください。"
-                )
+                raise ValueError("start_height_mm は 0.0 以上で指定してください。")
             self._start_height_mm = start_height_mm
 
         if pen_lift_mm is not None:
@@ -751,9 +744,7 @@ class FontBcapCobottaWriter:
             if self.config.writing_direction == "vertical":
                 self._cursor_y = 0.0
 
-                vertical_new_line_direction = (
-                    self.config.vertical_new_line_direction
-                )
+                vertical_new_line_direction = self.config.vertical_new_line_direction
                 if vertical_new_line_direction is None:
                     if self.config.mirror_horizontal:
                         vertical_new_line_direction = "left_to_right"
@@ -1232,7 +1223,7 @@ def main():
         # 曲線を直線分割するときの分割数。
         curve_division=16,
         # 筆画間でペンを持ち上げる高さ（mm）。
-        #pen_lift_mm=1.7,
+        # pen_lift_mm=1.7,
         pen_lift_mm=17,
         # 文字座標Xをロボット座標へ変換するときの符号。
         robot_x_sign=1.0,
