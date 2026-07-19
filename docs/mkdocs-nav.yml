@@ -1,0 +1,16 @@
+nav:
+  - Home: index.md
+  - 思想とデータフロー: concepts.md
+  - インストールと前提: installation.md
+  - Tutorial:
+      - 通常フォントから中心線を作る: tutorial/font_to_centerline.md
+      - KanjiVGから筆順付きストロークを作る: tutorial/kanjivg.md
+      - アルファベットストロークを作る: tutorial/alphabet.md
+      - COBOTTAで書字する: tutorial/cobotta.md
+  - API:
+      - API概要: api/index.md
+      - 輪郭・塗りつぶし・中心線: api/font_processing.md
+      - 筆順付きストローク: api/stroke.md
+      - 表示: api/viewer.md
+      - COBOTTA書字: api/cobotta_writer.md
+  - 制約と注意事項: limitations.md
