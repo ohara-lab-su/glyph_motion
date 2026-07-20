@@ -1,4 +1,5 @@
 # glyph_motion
+view on [github](https://github.com/ohara-lab-su/glyph_motion/) / [ohara-lab-su (doc)](https://ohara-lab-su.github.io/)
 
 `glyph_motion` は、文字を単なる画像として扱うのではなく、ロボットが実際になぞれる幾何データと筆画列へ変換するためのライブラリと
 それを用いた、ロボットで文字を書くデバイスサーバーです
