@@ -6,7 +6,7 @@ DOCS_DIR="$SCRIPT_DIR"
 ROOT_DIR="$(cd "$DOCS_DIR/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
 
-PKG_NAME="ur"   # パッケージ名を明示
+PKG_NAME="glyph_motion"   # パッケージ名を明示
 
 export PYTHONPATH="$SRC_DIR:${PYTHONPATH:-}"
 
