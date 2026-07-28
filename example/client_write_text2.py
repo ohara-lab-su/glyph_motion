@@ -5,8 +5,9 @@ import time
 from glyph_motion.server_fastapi.clients import SyncCobottaWriterClient
 
 
-SERVER_IP = "10.170.10.38"  # server2
+# SERVER_IP = "10.170.10.38"  # server2
 # SERVER_IP = "10.170.10.41" # server3
+SERVER_IP = "10.170.10.60" # server5
 SERVER_PORT = 8000
 # TEXT = "島根大学"
 # TEXT = "島根大学材料エネルギー学部"
@@ -86,15 +87,15 @@ def main() -> None:
     time.sleep(3)
 
     client.set_timeout(90)
-    client.set_pen_lift_mm(2.2)
-    client.set_start_height_mm(2.2)
+    client.set_pen_lift_mm(1.3)
+    client.set_start_height_mm(1.3)
     client.set_return_to_start(True)
     client.set_new_line(True)
 
     client.write("島根大学")
-    client.write("材料エネルギー学部")
-    client.write("尾原研究室")
-    client.write("xxxx")
+    # client.write("材料エネルギー学部")
+    # client.write("尾原研究室")
+    # client.write("xxxx")
 
     client.give_arm()
     client.disconnect()
