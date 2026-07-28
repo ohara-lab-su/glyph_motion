@@ -10,12 +10,13 @@ from glyph_motion.server_fastapi.server import run
 ##############################
 # SERVER_HOST = "0.0.0.0"
 # SERVER_HOST = "10.170.10.38" # cobotta2/server2
-SERVER_HOST = "10.170.10.55" # cobotta3/server4
+# SERVER_HOST = "10.170.10.55" # cobotta3/server4
 # SERVER_HOST = "10.170.10.41" # cobotta4/server3
+SERVER_HOST = "10.170.10.60" # cobotta4/server5
 
-COBOTTA_HOST = "10.170.10.36",  # cobotta2
-# COBOTTA_HOST = "10.170.10.53",  # cobotta3
-# COBOTTA_HOST = "10.170.10.37",  # cobotta4
+# COBOTTA_HOST = "10.170.10.36"  # cobotta2
+# COBOTTA_HOST = "10.170.10.53"  # cobotta3
+COBOTTA_HOST = "10.170.10.37"  # cobotta4
 
 SERVER_PORT = 8000
 ##############################
