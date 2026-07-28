@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v0.3.6, 2026-07-28, nakada
+
+- after cobotta3/4 setup
+
 ## v0.3.5 (2026-07-15), nakada
 
 ### Added
