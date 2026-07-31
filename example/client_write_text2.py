@@ -93,9 +93,16 @@ def main() -> None:
     client.set_new_line(True)
 
     # client.write("加田祐")
-    client.write("大塚千聖")
-    # client.write("材料エネルギー学部")
+    # client.write("大塚千聖")
     # client.write("尾原研究室")
+    # client.write("夏季休業")
+    # client.write("山田美優")
+    # client.write("末澤誠也")
+    #client.write("平野優奈")
+    client.write("材料エネルギー学部")
+    client.write("保科舞")
+    #client.write("")
+    # client.write("材料エネルギー学部")
     # client.write("xxxx")
 
     client.give_arm()
