@@ -14,24 +14,25 @@ readme = "README.md"
 # requires-python = ">=3.8"
 requires-python = ">=3.10"
 dependencies = [
-"x_logger",
-# "packmol_util" ,
-#
-"dataclasses",
-"coloredlogs",
-"colorlog",
-"pytest",
-"pytest-asyncio",
-"pyyaml",
-"toml",
-# "grpcio",
-"nest_asyncio",
-"sphinx",
-"myst-parser",
-"sphinx-autobuild",
-"sphinx-rtd-theme",
-"sphinxcontrib-napoleon",
-"linkify-it-py",
+    #"x_logger",
+    "xlogger-py",
+    # "packmol_util" ,
+    #
+    "dataclasses",
+    "coloredlogs",
+    "colorlog",
+    "pytest",
+    "pytest-asyncio",
+    "pyyaml",
+    "toml",
+    # "grpcio",
+    "nest_asyncio",
+    "sphinx",
+    "myst-parser",
+    "sphinx-autobuild",
+    "sphinx-rtd-theme",
+    "sphinxcontrib-napoleon",
+    "linkify-it-py",
     #
     "scikit-image",
 ]
