@@ -1,5 +1,9 @@
 # glyph_motion
 
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.en.md)
+[![ja](https://img.shields.io/badge/lang-ja-yellow.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.md)
+
+
 `glyph_motion` は、フォントまたは KanjiVG 由来の筆順付きストロークをロボット書字用の移動命令へ変換し、COBOTTA b-CAP または ese774_frame 経由で実行するためのライブラリである。
 
 
