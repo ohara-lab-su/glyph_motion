@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "glyph-motion"
-version = "0.3.7"
+version = "0.3.8"
 
 description = "Generate robot handwriting motions from text strings."
 authors = [
