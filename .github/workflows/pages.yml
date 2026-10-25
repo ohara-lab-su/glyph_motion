@@ -2,7 +2,7 @@ name: Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,42 +11,35 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/configure-pages@v5
-
-      - name: Install dependencies
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install project and documentation dependencies
         run: |
-          python3 -m pip install -U pip
-          python3 -m pip install sphinx myst-parser sphinx-rtd-theme linkify-it-py
-
-      # python3 -m pip install -r requirements.txt
-
-      # - name: Build Sphinx
-      #   working-directory: docs
-      #   run: |
-      #     sphinx-build -b html . _build/html
-      - name: Build Sphinx
-        run: |
-          bash docs/build.sh
-
-      - name: Upload
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install sphinx myst-parser sphinx-rtd-theme linkify-it-py
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Build all documentation trees
+        run: bash docs/build.sh
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
-
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
