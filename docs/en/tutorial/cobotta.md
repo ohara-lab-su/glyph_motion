@@ -95,3 +95,8 @@ For horizontal writing, the line-break direction is specified by `horizontal_new
 ## Retraction on failure
 
 `emergency_lift_pen()` moves synchronously to the planned pen-up Z height retained during writing. If the current position is already higher, it maintains the current Z height rather than lowering the pen.
+
+
+## Porting to Other Robots
+
+This chapter covers the COBOTTA implementation. Character processing is robot-independent. See [Using Other Robots](../other_robots.md).

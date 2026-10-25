@@ -204,3 +204,20 @@ write_text
 可動範囲外エラーが出る場合は、原点モード、文字サイズ、XY 符号、XY スケール、現在位置を確認する。
 
 筆記が遅すぎる場合は、`move_interval_sec` を 0.0 にし、`travel_speed`、`drawing_speed`、`accel`、`decel` を上げる。曲線分割が過剰な場合は `curve_division` を下げる。
+
+## 現行実装と他機種ロボットへの適用
+
+**実装の確認事項。** 今回提供された COBOTTA 制御ソースは `glyph_motion/font_bcap_cobotta_writer.py` であり、`FontBcapCobottaWriter` と `FontBcapCobottaWriterConfig` を定義する。実際の書字入口は `FontBcapCobottaWriter.write(text, start_height_mm=None, return_to_start=None, new_line=None)` である。`connect()`、`disconnect()`、`set_params()`、`reset_error()`、`emergency_lift_pen()` なども実装されている。一方、このソースには、上記の従来の README に記載された `CobottaBcapFontWriter`、`write_text()`、`preview_text()` は定義されていない。従来の記述は情報を欠落させないため残しているが、添付された現行実装の API であることを保証するものではない。
+
+本ライブラリの文字形状・レイアウト処理は **COBOTTA 専用ではない**。`glyph_motion.font_line_layout.FontLineLayout` はロボットに接続せずに配置済み文字と筆画点列を生成する。`glyph_motion.font_line_layout.PositionedCharacter` は配置済み筆画を保持し、`glyph_motion.lib.font_geometry.FontStrokePath` は筆画を表現する。`FontBcapCobottaWriter` は COBOTTA b-CAP による実行部分であり、文字・筆画生成の必須要素ではない。
+
+### 他のロボットで使用する手順
+
+1. `FontLineLayout` で文字列をレイアウトし、配置済み文字の筆画点列を取り出す。
+2. 筆画点列を対象ロボットの単位・座標系に変換する。書字面原点、軸方向、ツール姿勢、動作範囲を定める。
+3. 対象ロボットの制御クラスに、筆画始点へのペンアップ移動、筆画内のペンダウン描画、筆画間のペン退避を実装する。
+4. 接続、サーボ有効化、速度・加減速、エラー処理、停止処理は対象ロボットの API で実装する。COBOTTA b-CAP の移動命令を他機種へそのまま流用しない。
+5. ネットワーク制御が必要なら、**対象ロボット固有の制御クラス**をデバイスサーバーに公開する。添付された COBOTTA 実装の制御フロントは `font_bcap_cobotta_writer.py` であり、汎用筆画生成器とは区別する。サーバー公開 API はサーバー側ソースで別途確認する。
+6. 実機で動かす前に、軌跡、座標変換、可動範囲、ペン退避量、緊急停止を検証する。
+
+`docs/` 以下の詳細マニュアルは、README とは独立して管理する。

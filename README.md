@@ -203,3 +203,20 @@ For initial calibration, use `origin_mode="current_as_first_stroke"` and `surfac
 If an out-of-range motion error occurs, check the origin mode, character size, XY axis signs, XY scale factors, and current position.
 
 If writing is too slow, set `move_interval_sec` to 0.0 and increase `travel_speed`, `drawing_speed`, `accel`, and `decel`. If curves are subdivided excessively, reduce `curve_division`.
+
+## Current implementation and use with other robots
+
+**Implementation status.** The COBOTTA-specific source supplied for this revision is `glyph_motion/font_bcap_cobotta_writer.py`. It defines `FontBcapCobottaWriter` and `FontBcapCobottaWriterConfig`. The actual control entry point is `FontBcapCobottaWriter.write(text, start_height_mm=None, return_to_start=None, new_line=None)`. Other implemented methods include `connect()`, `disconnect()`, `set_params()`, `reset_error()`, and `emergency_lift_pen()`. This source does **not** define the `CobottaBcapFontWriter`, `write_text()`, or `preview_text()` API described in the earlier README sections above. Those earlier descriptions are retained for information preservation, not as confirmation that the APIs exist in the supplied implementation.
+
+The library's font geometry and layout components are **not COBOTTA-specific**. `glyph_motion.font_line_layout.FontLineLayout` constructs positioned characters and their stroke paths without connecting to a robot. `glyph_motion.font_line_layout.PositionedCharacter` holds the positioned strokes; `glyph_motion.lib.font_geometry.FontStrokePath` represents a stroke. `FontBcapCobottaWriter` is only the COBOTTA b-CAP execution adapter, not a prerequisite for using the geometry layer.
+
+### Adapting the output to another robot
+
+1. Create the text layout with `FontLineLayout` and obtain the stroke paths from the returned positioned characters.
+2. Convert the points into the target robot's units and coordinate frame, including the writing-plane origin, axis orientation, tool orientation, and permitted workspace.
+3. Implement pen-up travel to each stroke's first point, pen-down drawing along its ordered points, and pen-up clearance between strokes in the target robot's control class.
+4. Implement connection, robot enablement, motion parameters, error handling, and stopping with that robot's own API. Do not reuse COBOTTA b-CAP motion commands on other robot types.
+5. If network control is needed, expose **the robot-specific controller** through a device server. The device-server front-end for the supplied COBOTTA implementation is `font_bcap_cobotta_writer.py`; it must not be mistaken for the generic stroke generator. The exact server API needs confirmation against its own source.
+6. Validate trajectories, coordinate transformations, workspace limits, pen clearance, and emergency stopping before operating hardware.
+
+The detailed manual under `docs/` is maintained separately from these README files.
