@@ -3,11 +3,11 @@
 [![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.en.md)
 [![ja](https://img.shields.io/badge/lang-ja-yellow.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.md)
 
+[GitHub repository](https://github.com/ohara-lab-su/glyph_motion/) · [Project documentation](https://ohara-lab-su.github.io/)
 
-`glyph_motion` は、フォントまたは KanjiVG 由来の筆順付きストロークをロボット書字用の移動命令へ変換し、COBOTTA b-CAP または ese774_frame 経由で実行するためのライブラリである。
+`glyph_motion` is a library that converts strokes derived from fonts or KanjiVG, including stroke-order information, into motion commands for robotic handwriting. The commands can be executed through COBOTTA b-CAP or ese774_frame.
 
-
-## 構成
+## Structure
 
 ```text
 glyph_motion/
@@ -28,21 +28,21 @@ examples/
   client_write_text.py
 ```
 
-`lib/` 以下は純粋なフォント処理層である。TTF/TTC、KanjiVG、輪郭、中心線、筆順付きストロークなどを扱い、ロボット固有処理を持たない。
+The `lib/` directory is a font-processing layer independent of robotics. It handles TTF/TTC fonts, KanjiVG, outlines, centerlines, and strokes with stroke-order information, without robot-specific processing.
 
-`font_motion_builder.py` は、フォント由来のストロークまたは中心線をロボット非依存の相対移動命令へ変換する。
+`font_motion_builder.py` converts font-derived strokes or centerlines into robot-independent relative motion commands.
 
-`font_robot_motion_builder.py` と `font_robot_writer.py` は、文字列をロボット書字向けの抽象命令列へ変換する層である。ペンアップ、ペンダウン、書字速度、移動速度、Z 方向退避量などを扱うが、COBOTTA 固有 API には依存しない。
+`font_robot_motion_builder.py` and `font_robot_writer.py` convert strings into abstract command sequences for robotic handwriting. They handle pen-up and pen-down actions, writing and travel speeds, and Z-axis lift distances, without depending on COBOTTA-specific APIs.
 
-`font_bcap_cobotta_writer.py` は、`CobottaBcap` を用いて抽象書字命令を COBOTTA b-CAP の相対 P 移動へ変換して実行する制御クラスである。
+`font_bcap_cobotta_writer.py` provides a control class that uses `CobottaBcap` to translate abstract handwriting commands into relative P-coordinate motions for execution through COBOTTA b-CAP.
 
-`server_fastapi/` は、`CobottaBcapFontWriter` を ese774_frame の透過 API として公開するサーバー層である。
+`server_fastapi/` is the server layer that exposes `CobottaBcapFontWriter` through the ese774_frame transparent API.
 
-## COBOTTA b-CAP 書字クラス
+## COBOTTA b-CAP Handwriting Class
 
-`CobottaBcapFontWriter` は、COBOTTA b-CAP を用いて任意文字列を書くためのクラスライブラリである。実行スクリプトではなく、ローカル利用、サーバー利用、テスト利用から呼び出すための制御クラスである。
+`CobottaBcapFontWriter` is a class library for writing arbitrary strings with COBOTTA b-CAP. It is a control class intended to be called from local applications, servers, or tests, rather than a standalone execution script.
 
-主な API は以下である。
+Its main APIs are:
 
 ```text
 connect()
@@ -61,15 +61,15 @@ set_origin_parameters(...)
 set_transform_parameters(...)
 ```
 
-`write_text()` は、文字列から筆順付きロボット命令を生成し、必要に応じて b-CAP 接続、TakeArm、MotorOn、加減速設定、開始姿勢準備を行ったうえで、`CobottaBcap.robo_dmove(..., coord_mode="P")` により実行する。
+`write_text()` generates stroke-ordered robot commands from a string. As needed, it establishes a b-CAP connection, performs TakeArm and MotorOn, configures acceleration and deceleration, and prepares the starting pose before executing the commands via `CobottaBcap.robo_dmove(..., coord_mode="P")`.
 
-`preview_text()` は、ロボットへ投入せずに生成命令数と先頭命令の概要を返す。
+`preview_text()` returns the number of generated commands and a summary of the initial commands without sending them to the robot.
 
-## 設定
+## Configuration
 
-主要設定は `CobottaBcapFontWriterConfig` に集約される。
+The primary settings are consolidated in `CobottaBcapFontWriterConfig`.
 
-### 接続設定
+### Connection Settings
 
 ```text
 host
@@ -77,7 +77,7 @@ port
 kanjivg_directory
 ```
 
-### 文字生成設定
+### Text Generation Settings
 
 ```text
 layout
@@ -87,9 +87,9 @@ pen_lift_height_mm
 curve_division
 ```
 
-`character_height_mm` は一文字の高さである。`curve_division` は曲線分割数であり、大きくすると軌跡は滑らかになるが命令数は増える。
+`character_height_mm` specifies the height of one character. `curve_division` specifies the number of curve subdivisions: increasing it produces smoother trajectories but also increases the number of commands.
 
-### モーション設定
+### Motion Settings
 
 ```text
 drawing_speed
@@ -105,11 +105,11 @@ skip_zero_move
 zero_move_epsilon
 ```
 
-`drawing_speed` は筆記中の XY 移動速度である。`travel_speed` は非筆記 XY 移動速度である。`pen_up_speed` と `pen_down_speed` は Z 方向の退避・接触動作に使う。`move_interval_sec` は各移動命令投入後の待ち時間であり、0.0 にすると投入間隔を詰める。`max_travel_step_mm` は非筆記時の大きな XY 移動を分割する上限である。
+`drawing_speed` controls XY motion while writing, whereas `travel_speed` controls XY motion when not writing. `pen_up_speed` and `pen_down_speed` are used for Z-axis retraction and contact motions. `move_interval_sec` is the delay after issuing each motion command; setting it to 0.0 minimizes the interval between commands. `max_travel_step_mm` is the maximum step size used when subdividing large non-writing XY moves.
 
-速度が遅い場合は、まず `travel_speed`、`drawing_speed`、`accel`、`decel`、`move_interval_sec`、`curve_division` を調整する。
+If motion is too slow, first adjust `travel_speed`, `drawing_speed`, `accel`, `decel`, `move_interval_sec`, and `curve_division`.
 
-### 原点・書字面設定
+### Origin and Writing Surface Settings
 
 ```text
 origin_mode
@@ -120,7 +120,7 @@ robot_surface_z
 approach_lift_height_mm
 ```
 
-`origin_mode` は以下を想定する。
+The supported `origin_mode` values are:
 
 ```text
 current_as_first_stroke
@@ -128,22 +128,22 @@ current_as_origin
 absolute_origin
 ```
 
-`current_as_first_stroke` は、現在位置の XY を最初の筆画始点とみなす。初回の大きな XY 移動を抑制するため、実機調整時の既定値として扱う。
+`current_as_first_stroke` treats the XY coordinates of the current robot position as the starting point of the first stroke. It is the default for physical robot adjustment because it reduces the initial large XY move.
 
-`current_as_origin` は、現在位置の XY を文字座標 `(0, 0)` とみなす。
+`current_as_origin` treats the XY coordinates of the current position as character coordinates `(0, 0)`.
 
-`absolute_origin` は、`robot_origin_x` と `robot_origin_y` を文字座標 `(0, 0)` とみなす。
+`absolute_origin` uses `robot_origin_x` and `robot_origin_y` as character coordinates `(0, 0)`.
 
-`surface_z_mode` は以下を想定する。
+The supported `surface_z_mode` values are:
 
 ```text
 current
 absolute
 ```
 
-`current` は現在 Z を書字面 Z とみなす。`absolute` は `robot_surface_z` を書字面 Z とみなす。
+`current` treats the current Z coordinate as the writing surface. `absolute` uses `robot_surface_z` as the writing surface Z coordinate.
 
-### 座標写像設定
+### Coordinate Mapping Settings
 
 ```text
 robot_x_sign
@@ -157,21 +157,21 @@ robot_dry
 robot_drz
 ```
 
-文字座標と COBOTTA P 座標の向き・倍率・姿勢差分を設定する。紙面の置き方、ペン姿勢、ロボット座標系に合わせて変更する。
+These settings define axis directions, scale factors, and orientation offsets between character coordinates and COBOTTA P coordinates. Adjust them to match the paper placement, pen orientation, and robot coordinate system.
 
-## ese774_frame サーバー化
+## Server Integration with ese774_frame
 
-COBOTTA 文字書字処理は、通信量が少なく、画像転送のような連続大容量通信を必要としない。そのため、gRPC ではなく ese774_frame の FastAPI 透過 API として公開する。
+COBOTTA handwriting requires relatively little communication and does not need continuous high-volume transfers such as image streaming. It is therefore exposed through the ese774_frame FastAPI transparent API rather than gRPC.
 
-公開オブジェクト名は以下である。
+The exposed object name is:
 
 ```text
 cobotta_writer
 ```
 
-公開 API は `server_fastapi/spec_writer.py` に定義する。
+The public API is defined in `server_fastapi/spec_writer.py`.
 
-主な API は以下である。
+Its main methods are:
 
 ```text
 connect
@@ -192,14 +192,14 @@ preview_text
 write_text
 ```
 
-サーバー起動例は `examples/run_font_bcap_cobotta_writer_server.py` に置く。クライアント例は `examples/client_write_text.py` に置く。
+A server startup example is provided in `examples/run_font_bcap_cobotta_writer_server.py`. A client example is provided in `examples/client_write_text.py`.
 
-## 運用上の注意
+## Operational Notes
 
-実機で動作させる前に `preview_text()` で命令数と先頭命令を確認する。
+Before operating the physical robot, use `preview_text()` to check the number of commands and the initial commands.
 
-初回調整では、`origin_mode="current_as_first_stroke"` と `surface_z_mode="current"` を使い、ペン先を最初の筆画始点かつ書字面に合わせてから実行する。
+For initial calibration, use `origin_mode="current_as_first_stroke"` and `surface_z_mode="current"`. Position the pen tip at the starting point of the first stroke and on the writing surface before execution.
 
-可動範囲外エラーが出る場合は、原点モード、文字サイズ、XY 符号、XY スケール、現在位置を確認する。
+If an out-of-range motion error occurs, check the origin mode, character size, XY axis signs, XY scale factors, and current position.
 
-筆記が遅すぎる場合は、`move_interval_sec` を 0.0 にし、`travel_speed`、`drawing_speed`、`accel`、`decel` を上げる。曲線分割が過剰な場合は `curve_division` を下げる。
+If writing is too slow, set `move_interval_sec` to 0.0 and increase `travel_speed`, `drawing_speed`, `accel`, and `decel`. If curves are subdivided excessively, reduce `curve_division`.

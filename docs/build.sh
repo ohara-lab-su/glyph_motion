@@ -1,37 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCS_DIR="$SCRIPT_DIR"
+DOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$DOCS_DIR/.." && pwd)"
-SRC_DIR="$ROOT_DIR/src"
+SOURCE_DIR="$ROOT_DIR/src/glyph_motion"
+STAGE_DIR="$DOCS_DIR/_generated"
+OUTPUT_DIR="$DOCS_DIR/_build/html"
 
-PKG_NAME="glyph_motion"   # パッケージ名を明示
+if [[ ! -d "$SOURCE_DIR" ]]; then
+    echo "ERROR: glyph_motion source package not found: $SOURCE_DIR" >&2
+    exit 1
+fi
 
-export PYTHONPATH="$SRC_DIR:${PYTHONPATH:-}"
+export PYTHONPATH="$ROOT_DIR/src:${PYTHONPATH:-}"
+rm -rf "$STAGE_DIR" "$DOCS_DIR/_build"
+mkdir -p "$OUTPUT_DIR"
 
-echo "Cleaning build..."
-rm -rf "$DOCS_DIR/_build" "$DOCS_DIR/api"
-mkdir -p "$DOCS_DIR/api" "$DOCS_DIR/_static"
+for lang in en ja jp; do
+    mkdir -p "$STAGE_DIR/$lang"
+    cp -R "$DOCS_DIR/$lang/." "$STAGE_DIR/$lang/"
+    sphinx-apidoc --force --module-first -o "$STAGE_DIR/$lang/api" "$SOURCE_DIR"
+    if [[ ! -f "$STAGE_DIR/$lang/api/modules.rst" ]]; then
+        echo "ERROR: sphinx-apidoc did not generate api/modules.rst ($lang)" >&2
+        exit 1
+    fi
+done
 
-echo "Generating API stubs with sphinx-apidoc..."
-sphinx-apidoc -o "$DOCS_DIR/api" "$SRC_DIR/$PKG_NAME" -f --module-first
+# Build the root first, so the English index is the actual site index.
+sphinx-build -b html -c "$DOCS_DIR" -D language=en "$STAGE_DIR/en" "$OUTPUT_DIR"
+sphinx-build -b html -c "$DOCS_DIR" -D language=en "$STAGE_DIR/en" "$OUTPUT_DIR/en"
+sphinx-build -b html -c "$DOCS_DIR" -D language=ja "$STAGE_DIR/ja" "$OUTPUT_DIR/ja"
+sphinx-build -b html -c "$DOCS_DIR" -D language=ja "$STAGE_DIR/jp" "$OUTPUT_DIR/jp"
 
-echo "Building HTML..."
-sphinx-build -b html "$DOCS_DIR" "$DOCS_DIR/_build/html"
-
-# GitHub Pages が Jekyll で _static 等を落とすのを防ぐ（デプロイ方法に依らず害なし）
-: > "$DOCS_DIR/.nojekyll"
-: > "$DOCS_DIR/_build/html/.nojekyll"
-
-echo "Creating local redirect index.html..."
-cat > "$DOCS_DIR/index.html" << 'HTML'
-<!doctype html>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=./_build/html/">
-<link rel="canonical" href="./_build/html/">
-<title>Redirecting…</title>
-<p>Redirecting to <a href="./_build/html/">./_build/html/</a></p>
-HTML
-
-echo "Done."
+for page in "$OUTPUT_DIR/index.html" "$OUTPUT_DIR/en/index.html" "$OUTPUT_DIR/ja/index.html" "$OUTPUT_DIR/jp/index.html" "$OUTPUT_DIR/en/api/modules.html" "$OUTPUT_DIR/ja/api/modules.html" "$OUTPUT_DIR/jp/api/modules.html"; do
+    if [[ ! -f "$page" ]]; then
+        echo "ERROR: expected HTML page is missing: $page" >&2
+        exit 1
+    fi
+done
+printf 'Generated multilingual documentation: %s\n' "$OUTPUT_DIR"
