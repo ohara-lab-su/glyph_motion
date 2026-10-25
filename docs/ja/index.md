@@ -10,6 +10,7 @@
 - [アルファベットストローク](tutorial/alphabet.md)
 - [KanjiVGストローク](tutorial/kanjivg.md)
 - [フォント中心線](tutorial/font_to_centerline.md)
+- [他のロボットでの利用](other_robots.md)
 - [COBOTTA書字](tutorial/cobotta.md)
 - [制約と注意事項](limitations.md)
 
@@ -29,6 +30,7 @@ tutorial/alphabet
 tutorial/cobotta
 tutorial/font_to_centerline
 tutorial/kanjivg
+other_robots
 limitations
 api/modules
 ```

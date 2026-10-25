@@ -10,9 +10,9 @@
 - [Alphabet Strokes](tutorial/alphabet.md)
 - [KanjiVG Strokes](tutorial/kanjivg.md)
 - [Font Centerlines](tutorial/font_to_centerline.md)
+- [Using Other Robots](other_robots.md)
 - [COBOTTA Writing](tutorial/cobotta.md)
 - [Limitations and Precautions](limitations.md)
-
 
 ```{toctree}
 :hidden:
@@ -29,6 +29,7 @@ tutorial/alphabet
 tutorial/cobotta
 tutorial/font_to_centerline
 tutorial/kanjivg
+other_robots
 limitations
 api/modules
 ```
