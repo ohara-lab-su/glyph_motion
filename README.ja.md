@@ -1,7 +1,7 @@
 # glyph_motion
 
-[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.en.md)
-[![ja](https://img.shields.io/badge/lang-ja-yellow.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.md)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.md)
+[![ja](https://img.shields.io/badge/lang-ja-yellow.svg)](https://github.com/ohara-lab-su/glyph_motion/blob/main/README.ja.md)
 
 [![GitHub](https://img.shields.io/badge/GitHub-ohara--lab--su%2Fglyph_motion-181717?logo=github)](https://github.com/ohara-lab-su/glyph_motion/)
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Documentation-222222?logo=githubpages&logoColor=white)](https://ohara-lab-su.github.io/glyph_motion/)
