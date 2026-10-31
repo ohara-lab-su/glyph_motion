@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "glyph-motion"
 version = "0.3.9"
 
-description = "Generate robot handwriting motions from text strings."
+description = "Generate robot handwriting motion trajectories from text."
 authors = [
     { name="Kengo NAKADA", email="kengo.nakada@email.com" },
 ]
@@ -48,3 +48,8 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
+[project.urls]
+Homepage = "https://ohara-lab-su.github.io/glyph_motion/"
+Documentation = "https://ohara-lab-su.github.io/glyph_motion/"
+Repository = "https://github.com/ohara-lab-su/glyph_motion"
+Issues = "https://github.com/ohara-lab-su/glyph_motion/issues"
